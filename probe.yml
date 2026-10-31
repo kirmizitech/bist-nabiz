@@ -1,0 +1,119 @@
+name: Veri kaynagi sondasi
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/probe.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kaynaklari dene
+        run: |
+          mkdir -p data
+          python3 - <<'PY' | tee data/probe-log.txt
+          import csv, io, json, urllib.request
+          from datetime import datetime, timezone
+
+          UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
+          TICKERS = ["THYAO", "GARAN", "EREGL"]
+
+          def get(url):
+              req = urllib.request.Request(url, headers=UA)
+              return urllib.request.urlopen(req, timeout=25).read()
+
+          def rsi14(closes, period=14):
+              if len(closes) < period + 1:
+                  return None
+              diffs = [b - a for a, b in zip(closes[:-1], closes[1:])]
+              gains = [max(d, 0.0) for d in diffs]
+              losses = [max(-d, 0.0) for d in diffs]
+              ag = sum(gains[:period]) / period
+              al = sum(losses[:period]) / period
+              for i in range(period, len(diffs)):
+                  ag = (ag * (period - 1) + gains[i]) / period
+                  al = (al * (period - 1) + losses[i]) / period
+              if al == 0:
+                  return 100.0
+              return round(100 - 100 / (1 + ag / al), 2)
+
+          def yahoo(t):
+              last = None
+              for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+                  try:
+                      url = "https://" + host + "/v8/finance/chart/" + t + ".IS?range=1y&interval=1d"
+                      d = json.loads(get(url))
+                      r = d["chart"]["result"][0]
+                      ts = r["timestamp"]
+                      cl = r["indicators"]["quote"][0]["close"]
+                      pairs = [(datetime.fromtimestamp(x, timezone.utc).strftime("%Y-%m-%d"), c)
+                               for x, c in zip(ts, cl) if c is not None]
+                      if len(pairs) < 2:
+                          raise RuntimeError("yetersiz mum")
+                      return pairs, r["meta"].get("currency")
+                  except Exception as e:
+                      last = e
+              raise RuntimeError(str(last))
+
+          def stooq(t):
+              url = "https://stooq.com/q/d/l/?s=" + t.lower() + ".tr&i=d"
+              txt = get(url).decode("utf-8", "replace")
+              rows = list(csv.DictReader(io.StringIO(txt)))
+              pairs = [(r["Date"], float(r["Close"])) for r in rows if r.get("Close")]
+              if len(pairs) < 2:
+                  raise RuntimeError("yetersiz mum: " + txt[:60])
+              return pairs, "TRY"
+
+          out = {"ranAt": datetime.now(timezone.utc).isoformat(timespec="seconds"), "results": []}
+          for name, fn in (("yahoo", yahoo), ("stooq", stooq)):
+              for t in TICKERS:
+                  rec = {"source": name, "ticker": t}
+                  try:
+                      pairs, cur = fn(t)
+                      closes = [c for _, c in pairs]
+                      rec.update(ok=True, bars=len(pairs), first=pairs[0][0], last=pairs[-1][0],
+                                 lastClose=round(closes[-1], 4), currency=cur, rsi14=rsi14(closes))
+                      print("OK   %-6s %-6s %4d mum  %s -> %s  son %s  RSI14 %s"
+                            % (name, t, len(pairs), pairs[0][0], pairs[-1][0], closes[-1], rec["rsi14"]))
+                  except Exception as e:
+                      rec.update(ok=False, error=(type(e).__name__ + ": " + str(e))[:300])
+                      print("FAIL %-6s %-6s %s: %s" % (name, t, type(e).__name__, e))
+                  out["results"].append(rec)
+
+          usable = sorted({r["source"] for r in out["results"] if r.get("ok")})
+          out["usableSources"] = usable
+          out["verdict"] = ("KULLANILABILIR: " + ", ".join(usable)) if usable else "HICBIR KAYNAK ERISILEMEDI"
+          print("")
+          print(out["verdict"])
+          with open("data/probe-result.json", "w", encoding="utf-8") as fh:
+              json.dump(out, fh, ensure_ascii=False, indent=1)
+          PY
+
+      - name: Ozeti calisma sayfasina yaz
+        if: always()
+        run: |
+          echo '## Veri kaynagi sondasi' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat data/probe-log.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo 'log uretilemedi' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Sonucu depoya yaz
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data
+          if git diff --staged --quiet; then
+            echo "Degisiklik yok."
+          else
+            git commit -m "sonda: veri kaynagi sonucu"
+            git push
+          fi
