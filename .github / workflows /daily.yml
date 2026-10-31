@@ -1,0 +1,420 @@
+name: Gunluk BIST guncellemesi
+
+# BIST kapanisi 18:00 Istanbul = 15:00 UTC. Veri 15:40 UTC'de cekilir.
+on:
+  schedule:
+    - cron: "40 15 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      only30:
+        description: "Sadece BIST 30 (hizli deneme)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bist-daily
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Veri cek, gostergeleri hesapla, panoyu uret
+        env:
+          ONLY30: ${{ inputs.only30 }}
+        run: |
+          mkdir -p data docs
+          python3 - <<'PY' | tee data/run-log.txt
+          import csv, io, json, os, time, urllib.request
+          from datetime import datetime, timezone
+
+          UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
+          BIST30 = ["AEFES", "AKBNK", "ASELS", "ASTOR", "BIMAS", "DSTKF", "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "ISCTR", "KCHOL", "KRDMD", "MGROS", "PETKM", "PGSUS", "SAHOL", "SASA", "SISE", "TAVHL", "TCELL", "THYAO", "TOASO", "TRALT", "TTKOM", "TUPRS", "VAKBN", "YKBNK"]
+          BIST100 = ["AEFES", "AKBNK", "AKSA", "AKSEN", "ALARK", "ALTNY", "ANSGR", "ARCLK", "ASELS", "ASTOR", "BALSU", "BERA", "BIMAS", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "CANTE", "CCOLA", "CIMSA", "CVKMD", "CWENE", "DAPGM", "DOAS", "DOHOL", "DSTKF", "ECILC", "EFOR", "EKGYO", "ENERY", "ENJSA", "ENKAI", "EREGL", "ESEN", "EUPWR", "EUREN", "FENER", "FROTO", "GARAN", "GENIL", "GESAN", "GLRMK", "GRSEL", "GRTHO", "GSRAY", "GUBRF", "HALKB", "HEKTS", "IEYHO", "ISCTR", "ISMEN", "IZENR", "KCHOL", "KLRHO", "KRDMD", "KTLEV", "KUYAS", "MAGEN", "MAVI", "MGROS", "MIATK", "MPARK", "OBAMS", "ODAS", "ODINE", "OTKAR", "OYAKC", "PAHOL", "PASEU", "PATEK", "PETKM", "PGSUS", "PSGYO", "QUAGR", "RALYH", "REEDR", "SAHOL", "SARKY", "SASA", "SISE", "SKBNK", "SOKM", "TAVHL", "TCELL", "THYAO", "TKFEN", "TOASO", "TRALT", "TRENJ", "TRMET", "TSKB", "TTKOM", "TUKAS", "TUPRS", "TURSG", "ULKER", "VAKBN", "VESTL", "YKBNK", "ZOREN"]
+          ONLY30 = os.environ.get("ONLY30", "").lower() == "true"
+          DISCLAIMER = ("Bu sayfa yatirim tavsiyesi degildir ve lisansli bir finansal danisman tarafindan "
+                        "hazirlanmamistir. Icerik objektif, kurallari sabit bir teknik gosterge taramasidir; "
+                        "hicbir bolum kisiselestirilmis bir al/sat onerisi teskil etmez. Yatirim kararlarinizi "
+                        "kendi arastirmaniza dayanarak ve gerekirse lisansli bir danismana danisarak veriniz.")
+
+
+          def http(url):
+              return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=25).read()
+
+
+          def yahoo(t):
+              last = None
+              for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+                  try:
+                      url = "https://" + host + "/v8/finance/chart/" + t + ".IS?range=2y&interval=1d"
+                      d = json.loads(http(url))
+                      r = d["chart"]["result"][0]
+                      q = r["indicators"]["quote"][0]
+                      rows = [(datetime.fromtimestamp(x, timezone.utc).strftime("%Y-%m-%d"), c, v)
+                              for x, c, v in zip(r["timestamp"], q["close"], q.get("volume") or [None] * len(r["timestamp"]))
+                              if c is not None]
+                      if len(rows) < 2:
+                          raise RuntimeError("yetersiz mum")
+                      return {"dates": [a for a, _, _ in rows], "closes": [round(float(b), 4) for _, b, _ in rows],
+                              "volumes": [int(c) if c else 0 for _, _, c in rows], "source": "yahoo"}
+                  except Exception as e:
+                      last = e
+              raise RuntimeError("yahoo: " + str(last))
+
+
+          def stooq(t):
+              txt = http("https://stooq.com/q/d/l/?s=" + t.lower() + ".tr&i=d").decode("utf-8", "replace")
+              rows = [(r["Date"], float(r["Close"]), int(float(r.get("Volume") or 0)))
+                      for r in csv.DictReader(io.StringIO(txt)) if r.get("Close")]
+              if len(rows) < 2:
+                  raise RuntimeError("stooq: csv degil")
+              return {"dates": [a for a, _, _ in rows], "closes": [round(b, 4) for _, b, _ in rows],
+                      "volumes": [c for _, _, c in rows], "source": "stooq"}
+
+
+          def fetch(t):
+              errs = []
+              for fn in (yahoo, stooq):
+                  try:
+                      return fn(t)
+                  except Exception as e:
+                      errs.append(str(e)[:120])
+              raise RuntimeError(" | ".join(errs))
+
+
+          def sma(c, p):
+              return round(sum(c[-p:]) / p, 4) if len(c) >= p else None
+
+
+          def rsi14(c, p=14):
+              if len(c) < p + 1:
+                  return None
+              d = [b - a for a, b in zip(c[:-1], c[1:])]
+              g = [max(x, 0.0) for x in d]
+              l = [max(-x, 0.0) for x in d]
+              ag, al = sum(g[:p]) / p, sum(l[:p]) / p
+              for i in range(p, len(d)):
+                  ag = (ag * (p - 1) + g[i]) / p
+                  al = (al * (p - 1) + l[i]) / p
+              if al == 0:
+                  return 100.0 if ag > 0 else 50.0
+              return round(100 - 100 / (1 + ag / al), 2)
+
+
+          def ema(v, p):
+              k = 2 / (p + 1)
+              e = sum(v[:p]) / p
+              out = [e]
+              for x in v[p:]:
+                  e = x * k + e * (1 - k)
+                  out.append(e)
+              return out
+
+
+          def macd(c, f=12, s=26, g=9):
+              if len(c) < s + g:
+                  return None
+              ef, es = ema(c, f), ema(c, s)
+              ef = ef[len(ef) - len(es):]
+              line = [a - b for a, b in zip(ef, es)]
+              if len(line) < g:
+                  return None
+              sig = ema(line, g)
+              return {"macd": round(line[-1], 4), "signal": round(sig[-1], 4), "hist": round(line[-1] - sig[-1], 4)}
+
+
+          def pct(c, n):
+              if len(c) <= n or not c[-1 - n]:
+                  return None
+              return round((c[-1] / c[-1 - n] - 1) * 100, 2)
+
+
+          def ytd(s):
+              y = s["dates"][-1][:4]
+              for d, c in zip(s["dates"], s["closes"]):
+                  if d.startswith(y) and c:
+                      return 0.0 if c == s["closes"][-1] else round((s["closes"][-1] / c - 1) * 100, 2)
+              return None
+
+
+          def compute(s):
+              c = s["closes"]
+              m = macd(c)
+              return {"price": c[-1], "asof": s["dates"][-1], "volume": s["volumes"][-1] if s["volumes"] else None,
+                      "change1d": pct(c, 1), "change5d": pct(c, 5), "change1m": pct(c, 21), "change3m": pct(c, 63),
+                      "changeYtd": ytd(s), "rsi14": rsi14(c), "macdHist": m["hist"] if m else None,
+                      "sma20": sma(c, 20), "sma50": sma(c, 50), "sma200": sma(c, 200),
+                      "bars": len(c), "source": s.get("source")}
+
+
+          # ---------------- veri toplama ----------------
+          universe = BIST30 if ONLY30 else BIST100
+          rows, fails = [], []
+          for i, t in enumerate(universe, 1):
+              try:
+                  r = compute(fetch(t))
+                  r["ticker"] = t
+                  r["isBist30"] = t in BIST30
+                  rows.append(r)
+                  print("[%3d/%d] %-6s %10s  %s  bar=%3d  RSI=%-6s MACDh=%s"
+                        % (i, len(universe), t, r["price"], r["asof"], r["bars"], r["rsi14"], r["macdHist"]))
+              except Exception as e:
+                  fails.append({"ticker": t, "error": str(e)[:200]})
+                  print("[%3d/%d] %-6s HATA: %s" % (i, len(universe), t, str(e)[:120]))
+              time.sleep(0.35)
+
+          if not rows:
+              raise SystemExit("Hicbir hissede veri alinamadi.")
+
+
+          def ok(r, *f):
+              return all(r.get(x) is not None for x in f)
+
+
+          short = sorted([r for r in rows if ok(r, "rsi14", "price", "sma20", "change5d")
+                          and r["rsi14"] < 70 and r["price"] > r["sma20"]],
+                         key=lambda r: r["change5d"], reverse=True)
+          mid = sorted([r for r in rows if ok(r, "macdHist", "price", "sma50")
+                        and r["macdHist"] > 0 and r["price"] > r["sma50"]],
+                       key=lambda r: (r["price"] - r["sma50"]) / r["sma50"], reverse=True)
+          long_ = sorted([r for r in rows if ok(r, "price", "sma200", "changeYtd")
+                          and r["price"] > r["sma200"] and r["changeYtd"] > 0],
+                         key=lambda r: r["changeYtd"], reverse=True)
+          screen = {"kisa": [r["ticker"] for r in short[:5]], "orta": [r["ticker"] for r in mid[:5]],
+                    "uzun": [r["ticker"] for r in long_[:5]]}
+
+          mv = sorted([r for r in rows if r["change1d"] is not None], key=lambda r: r["change1d"], reverse=True)
+          summary = {"covered": len(rows),
+                     "avgChange1d": round(sum(r["change1d"] for r in mv) / len(mv), 2) if mv else None,
+                     "topGainers": [{"ticker": r["ticker"], "change1d": r["change1d"]} for r in mv[:5]],
+                     "topLosers": [{"ticker": r["ticker"], "change1d": r["change1d"]} for r in mv[-5:][::-1]],
+                     "rsiReady": sum(1 for r in rows if r["rsi14"] is not None),
+                     "macdReady": sum(1 for r in rows if r["macdHist"] is not None)}
+          asof = sorted({r["asof"] for r in rows})
+          data = {"generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": asof[-1],
+                  "asofSpread": asof if len(asof) > 1 else None,
+                  "universe": "BIST 30" if ONLY30 else "BIST 100",
+                  "rows": sorted(rows, key=lambda r: r["ticker"]), "failures": fails,
+                  "screen": screen, "summary": summary}
+          with open("data/latest.json", "w", encoding="utf-8") as fh:
+              json.dump(data, fh, ensure_ascii=False, indent=1)
+
+          new = not os.path.exists("data/log.csv")
+          with open("data/log.csv", "a", newline="", encoding="utf-8") as fh:
+              w = csv.writer(fh)
+              if new:
+                  w.writerow(["generatedAt", "asof", "covered", "failed", "rsiReady", "macdReady", "avgChange1d"])
+              w.writerow([data["generatedAt"], data["asof"], len(rows), len(fails),
+                          summary["rsiReady"], summary["macdReady"], summary["avgChange1d"]])
+
+          print("")
+          print("Tamam: %d hisse, %d hata, as-of %s | RSI hazir %d, MACD hazir %d"
+                % (len(rows), len(fails), data["asof"], summary["rsiReady"], summary["macdReady"]))
+          print("Kisa: %s" % ", ".join(screen["kisa"]))
+          print("Orta: %s" % ", ".join(screen["orta"]))
+          print("Uzun: %s" % ", ".join(screen["uzun"]))
+
+          # ---------------- pano ----------------
+          report = ('<div class="rc empty">Gunluk rapor henuz uretilmedi. Haber taramasi ve dengeli yorum '
+                    'katmani eklendiginde bu alana yazilacak.</div>')
+          if os.path.exists("data/report.html"):
+              with open("data/report.html", encoding="utf-8") as fh:
+                  report = '<div class="rc">' + fh.read() + "</div>"
+
+          CSS = """
+          :root{--bg:#F3F5F7;--sf:#fff;--sf2:#E7EBEF;--ink:#121820;--mut:#586372;--ac:#16506B;--acs:#E4EEF2;
+          --pos:#1F7A4D;--neg:#B23A48;--bd:#D8DEE4}
+          @media(prefers-color-scheme:dark){:root{--bg:#0E1216;--sf:#161C22;--sf2:#1E262E;--ink:#E7ECEF;
+          --mut:#9AA7B2;--ac:#5CB4D4;--acs:#16323D;--pos:#4CC488;--neg:#E2707C;--bd:#2A333B}}
+          *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+          font:14px/1.55 'Public Sans',system-ui,-apple-system,sans-serif}
+          h1,h2,h3{font-family:Archivo,system-ui,sans-serif;margin:0}
+          .wrap{max-width:1240px;margin:0 auto;padding:26px 16px 60px}
+          header{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;
+          padding-bottom:16px;margin-bottom:20px;border-bottom:1px solid var(--bd)}
+          h1{font-size:27px;font-weight:800;letter-spacing:-.01em}
+          header p{margin:6px 0 0;color:var(--mut);max-width:58ch}
+          .pill{display:inline-flex;align-items:center;gap:7px;background:var(--sf2);border:1px solid var(--bd);
+          padding:5px 12px;border-radius:999px;font-size:12.5px}
+          .pill i{width:7px;height:7px;border-radius:50%;background:var(--pos);display:inline-block}
+          .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+          @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
+          .c{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px}
+          .c .l{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:600}
+          .c .v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;margin-top:7px}
+          .c .s{font-size:12.5px;color:var(--mut);margin-top:4px}
+          .pos{color:var(--pos)}.neg{color:var(--neg)}.mut{color:var(--mut)}
+          section{margin-bottom:28px}section h2{font-size:18px;margin-bottom:4px}
+          .lede{color:var(--mut);font-size:13.5px;margin:0 0 13px}
+          .sc{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+          @media(max-width:860px){.sc{grid-template-columns:1fr}}
+          .sc>div{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px}
+          .sc h3{font-size:14px;margin-bottom:4px}
+          .sc .r{font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.45}
+          .chips{display:flex;flex-wrap:wrap;gap:6px}
+          .chip{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;background:var(--acs);
+          color:var(--ac);border:1px solid var(--bd);border-radius:7px;padding:3px 9px}
+          .chip.n{background:transparent;color:var(--mut);font-family:inherit;font-weight:400}
+          .rc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:19px 21px;line-height:1.65}
+          .rc.empty{border-style:dashed;color:var(--mut)}
+          .rc h3{font-size:15px;margin:18px 0 8px}.rc h3:first-child{margin-top:0}
+          .rc table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 14px}
+          .rc th{background:var(--sf2);text-align:left;padding:8px 10px;font-size:11.5px;text-transform:uppercase;
+          letter-spacing:.05em;color:var(--mut)}
+          .rc td{padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+          .ctl{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:13px 0 11px;flex-wrap:wrap}
+          .tg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+          .tg button{font:600 13px 'Public Sans',sans-serif;background:var(--sf);color:var(--mut);border:0;
+          padding:7px 14px;cursor:pointer}
+          .tg button.on{background:var(--ac);color:#fff}
+          .sw{overflow-x:auto;border:1px solid var(--bd);border-radius:12px;background:var(--sf)}
+          table.g{border-collapse:collapse;width:100%;min-width:880px}
+          table.g th{position:sticky;top:0;background:var(--sf2);text-align:left;font-size:11.5px;
+          text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:600;padding:10px 13px;
+          border-bottom:1px solid var(--bd);cursor:pointer;white-space:nowrap}
+          table.g th.n,table.g td.n{text-align:right}
+          table.g td{padding:9px 13px;border-bottom:1px solid var(--bd);font-size:13.5px}
+          table.g tbody tr:hover{background:var(--sf2)}
+          td.tk,td.m{font-family:'IBM Plex Mono',monospace}
+          td.tk{font-weight:600}
+          .b30{display:inline-block;margin-left:7px;font-size:10px;font-weight:700;background:var(--ac);
+          color:var(--bg);padding:1px 6px;border-radius:5px;letter-spacing:.03em;vertical-align:middle}
+          footer{margin-top:32px;padding-top:15px;border-top:1px solid var(--bd);font-size:12px;color:var(--mut);line-height:1.6}
+          .fail{background:var(--sf);border:1px solid var(--neg);border-radius:10px;padding:10px 14px;
+          font-size:12.5px;margin-bottom:16px}
+          """
+
+          JS = """
+          var D=window.__BIST__,f='all',k='ticker',d=1;
+          function n(x,p){return (x===null||x===undefined)?'\u2014':Number(x).toLocaleString('tr-TR',{minimumFractionDigits:p,maximumFractionDigits:p});}
+          function v(x){return (x===null||x===undefined)?'\u2014':Number(x).toLocaleString('tr-TR');}
+          function draw(){
+           var L=D.rows.filter(function(r){return f==='30'?r.isBist30:true;});
+           L=L.slice().sort(function(a,b){var x=a[k],y=b[k];
+            if(x===null||x===undefined)x=(k==='ticker')?'':-Infinity;
+            if(y===null||y===undefined)y=(k==='ticker')?'':-Infinity;
+            return (typeof x==='string')?x.localeCompare(y)*d:(x-y)*d;});
+           document.getElementById('tb').innerHTML=L.map(function(r){
+            var c=r.change1d,cc=(c===null)?'mut':(c>0?'pos':(c<0?'neg':'')),cs=(c===null)?'\u2014':((c>0?'+':'')+n(c,2)+'%');
+            var mh=r.macdHist,mc=(mh===null)?'mut':(mh>0?'pos':'neg');
+            return '<tr><td class="tk">'+r.ticker+(r.isBist30?'<span class="b30">B30</span>':'')+'</td>'+
+             '<td class="n m">'+n(r.price,2)+'</td>'+
+             '<td class="n m '+cc+'">'+cs+'</td>'+
+             '<td class="n m">'+n(r.rsi14,1)+'</td>'+
+             '<td class="n m '+mc+'">'+(mh===null?'\u2014':((mh>0?'+':'')+n(mh,3)))+'</td>'+
+             '<td class="n m">'+n(r.sma50,2)+'</td>'+
+             '<td class="n m">'+n(r.sma200,2)+'</td>'+
+             '<td class="n m">'+v(r.volume)+'</td>'+
+             '<td class="n m">'+r.bars+'</td></tr>';}).join('');
+           document.getElementById('ct').textContent=L.length+' hisse';
+          }
+          Array.prototype.forEach.call(document.querySelectorAll('.tg button'),function(b){b.onclick=function(){
+           f=b.getAttribute('data-f');
+           Array.prototype.forEach.call(document.querySelectorAll('.tg button'),function(x){x.className=(x===b)?'on':'';});
+           draw();};});
+          Array.prototype.forEach.call(document.querySelectorAll('table.g th'),function(th){th.onclick=function(){
+           var key=th.getAttribute('data-k');if(!key)return;
+           if(k===key){d=-d;}else{k=key;d=(key==='ticker')?1:-1;}draw();};});
+          draw();
+          """
+
+
+          def chips(lst):
+              if not lst:
+                  return '<span class="chip n">kurala uyan hisse yok</span>'
+              return "".join('<span class="chip">' + t + "</span>" for t in lst)
+
+
+          g = summary["topGainers"][0] if summary["topGainers"] else None
+          lo = summary["topLosers"][0] if summary["topLosers"] else None
+          avg = summary["avgChange1d"]
+          failbox = ""
+          if fails:
+              failbox = ('<div class="fail"><b>' + str(len(fails)) + " hissede veri alinamadi:</b> "
+                         + ", ".join(x["ticker"] for x in fails) + ". Bu satirlar tabloda yer almaz.</div>")
+          spread = ""
+          if data["asofSpread"]:
+              spread = ' <span class="mut">(farkli kapanis tarihleri: ' + ", ".join(data["asofSpread"]) + ")</span>"
+
+          html = (
+              '<!doctype html><html lang="tr"><head><meta charset="utf-8">'
+              '<meta name="viewport" content="width=device-width,initial-scale=1"><title>BIST Nabiz</title>'
+              '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">'
+              "<style>" + CSS + "</style></head><body><div class=\"wrap\">"
+              "<header><div><h1>BIST Nabiz</h1><p>BIST 30 ve BIST 100 bilesenlerinin gunluk fiyat, gosterge ve "
+              "trend takibi. Her islem gunu kapanistan sonra otomatik guncellenir.</p></div>"
+              '<div style="text-align:right"><span class="pill"><i></i>Kapanis: ' + data["asof"] + spread + "</span>"
+              '<div class="mut" style="font-size:12.5px;margin-top:6px">Uretim: ' + data["generatedAt"]
+              + " &middot; kaynak: " + (rows[0].get("source") or "-") + "</div></div></header>"
+              + failbox +
+              '<section class="cards">'
+              '<div class="c"><div class="l">Kapsam</div><div class="v">' + str(summary["covered"]) + "</div>"
+              '<div class="s">' + data["universe"] + " &middot; RSI hazir: " + str(summary["rsiReady"])
+              + " &middot; MACD hazir: " + str(summary["macdReady"]) + "</div></div>"
+              '<div class="c"><div class="l">En cok yukselen</div><div class="v pos">'
+              + ((g["ticker"] + " +" + format(g["change1d"], ".2f") + "%") if g else "-")
+              + '</div><div class="s">gunluk degisim</div></div>'
+              '<div class="c"><div class="l">En cok dusen</div><div class="v neg">'
+              + ((lo["ticker"] + " " + format(lo["change1d"], ".2f") + "%") if lo else "-")
+              + '</div><div class="s">gunluk degisim</div></div>'
+              '<div class="c"><div class="l">Ortalama degisim</div><div class="v '
+              + ("pos" if (avg or 0) > 0 else "neg") + '">'
+              + ((format(avg, ".2f") + "%") if avg is not None else "-")
+              + '</div><div class="s">' + str(summary["covered"]) + " hissenin gunluk ortalamasi</div></div></section>"
+              "<section><h2>Vade bazli tarama</h2>"
+              '<p class="lede">Sabit, objektif kurallar. Siralama kuralin kendi olcutune gore yapilir; oneri icermez.</p>'
+              '<div class="sc">'
+              '<div><h3>Kisa vade</h3><div class="r">RSI14 &lt; 70 ve fiyat 20 gunluk ortalamanin uzerinde. '
+              '5 gunluk getiriye gore sirali.</div><div class="chips">' + chips(screen["kisa"]) + "</div></div>"
+              '<div><h3>Orta vade</h3><div class="r">MACD histogrami pozitif ve fiyat 50 gunluk ortalamanin '
+              'uzerinde. Ortalamadan uzakliga gore sirali.</div><div class="chips">' + chips(screen["orta"]) + "</div></div>"
+              '<div><h3>Uzun vade</h3><div class="r">Fiyat 200 gunluk ortalamanin uzerinde ve yil basindan beri '
+              'getiri pozitif. YTD getiriye gore sirali.</div><div class="chips">' + chips(screen["uzun"]) + "</div></div>"
+              "</div></section>"
+              "<section><h2>Gunluk Rapor</h2>"
+              '<p class="lede">Teknik tablo ile haber akisinin birlestigi gozlemsel ozet. Yatirim tavsiyesi degildir.</p>'
+              + report + "</section>"
+              "<section><h2>Tum hisseler</h2>"
+              '<div class="ctl"><span class="mut" id="ct"></span>'
+              '<div class="tg"><button data-f="all" class="on">Tumu</button>'
+              '<button data-f="30">Sadece BIST 30</button></div></div>'
+              '<div class="sw"><table class="g"><thead><tr>'
+              '<th data-k="ticker">Kod</th><th data-k="price" class="n">Fiyat</th>'
+              '<th data-k="change1d" class="n">Gun %</th><th data-k="rsi14" class="n">RSI14</th>'
+              '<th data-k="macdHist" class="n">MACD Hist</th><th data-k="sma50" class="n">SMA50</th>'
+              '<th data-k="sma200" class="n">SMA200</th><th data-k="volume" class="n">Hacim</th>'
+              '<th data-k="bars" class="n">Mum</th></tr></thead><tbody id="tb"></tbody></table></div></section>'
+              "<footer>" + DISCLAIMER + "</footer></div>"
+              "<script>window.__BIST__=" + json.dumps({"rows": data["rows"]}, ensure_ascii=False) + ";</script>"
+              "<script>" + JS + "</script></body></html>")
+
+          with open("docs/index.html", "w", encoding="utf-8") as fh:
+              fh.write(html)
+          print("Pano yazildi: docs/index.html (%d bayt)" % len(html))
+          PY
+
+      - name: Ozeti calisma sayfasina yaz
+        if: always()
+        run: |
+          echo '## BIST Nabiz' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -12 data/run-log.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo 'log yok' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Degisiklikleri depoya isle
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data docs
+          if git diff --staged --quiet; then
+            echo "Degisiklik yok."
+          else
+            git commit -m "veri: $(date -u +%Y-%m-%d) kapanis guncellemesi"
+            git push
+          fi
