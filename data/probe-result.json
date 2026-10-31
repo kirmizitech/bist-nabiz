@@ -1,0 +1,60 @@
+{
+ "ranAt": "2026-10-31T11:12:17+00:00",
+ "results": [
+  {
+   "source": "yahoo",
+   "ticker": "THYAO",
+   "ok": true,
+   "bars": 252,
+   "first": "2025-10-30",
+   "last": "2026-10-30",
+   "lastClose": 242.2,
+   "currency": "TRY",
+   "rsi14": 23.33
+  },
+  {
+   "source": "yahoo",
+   "ticker": "GARAN",
+   "ok": true,
+   "bars": 252,
+   "first": "2025-10-30",
+   "last": "2026-10-30",
+   "lastClose": 125.2,
+   "currency": "TRY",
+   "rsi14": 41.44
+  },
+  {
+   "source": "yahoo",
+   "ticker": "EREGL",
+   "ok": true,
+   "bars": 252,
+   "first": "2025-10-30",
+   "last": "2026-10-30",
+   "lastClose": 29.66,
+   "currency": "TRY",
+   "rsi14": 26.19
+  },
+  {
+   "source": "stooq",
+   "ticker": "THYAO",
+   "ok": false,
+   "error": "RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name="
+  },
+  {
+   "source": "stooq",
+   "ticker": "GARAN",
+   "ok": false,
+   "error": "RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name="
+  },
+  {
+   "source": "stooq",
+   "ticker": "EREGL",
+   "ok": false,
+   "error": "RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name="
+  }
+ ],
+ "usableSources": [
+  "yahoo"
+ ],
+ "verdict": "KULLANILABILIR: yahoo"
+}

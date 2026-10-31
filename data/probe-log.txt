@@ -1,0 +1,8 @@
+OK   yahoo  THYAO   252 mum  2025-10-30 -> 2026-10-30  son 242.1999969482422  RSI14 23.33
+OK   yahoo  GARAN   252 mum  2025-10-30 -> 2026-10-30  son 125.19999694824219  RSI14 41.44
+OK   yahoo  EREGL   252 mum  2025-10-30 -> 2026-10-30  son 29.65999984741211  RSI14 26.19
+FAIL stooq  THYAO  RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset="utf-8"><meta name=
+FAIL stooq  GARAN  RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset="utf-8"><meta name=
+FAIL stooq  EREGL  RuntimeError: yetersiz mum: <!DOCTYPE html><html><head><meta charset="utf-8"><meta name=
+
+KULLANILABILIR: yahoo
