@@ -262,11 +262,14 @@ jobs:
                       ],
                       "signals": local
                   }
+                  vol_ratio = round(vol[-1] / v20, 2) if v20 else None
+                  out[t]["volRatio"] = vol_ratio
                   for s in local:
                       kind = s.split(" (")[0]
                       if kind.startswith("hacim"):
                           kind = "hacim sicramasi"
-                      sigs.append({"ticker": t, "kind": kind, "text": s})
+                      sigs.append({"ticker": t, "kind": kind, "text": s,
+                                   "volRatio": vol_ratio})
                   print("OK   %-6s %8.2f  direnc %s  destek %s  %s" %
                         (t, price,
                          ",".join(str(x["level"]) for x in res) or "-",
@@ -277,34 +280,73 @@ jobs:
                   print("FAIL %-6s %s: %s" % (t, type(e).__name__, e))
               time.sleep(0.15)
 
+          # ---- gurultu ayiklama ----
+          # Ayni sinyal evrenin ucte birinden fazlasinda varsa o gun piyasa genelinde
+          # olan bir seydir; tek tek listelemek gurultu uretir. Boyle bir sinyal ancak
+          # hacim teyidi varsa kisisel sinyal sayilir.
+          VOL_CONFIRM = 1.5
+          counts = {}
+          for s in sigs:
+              counts[s["kind"]] = counts.get(s["kind"], 0) + 1
+          wide = set(k for k, v in counts.items() if v >= max(8, 0.33 * max(len(out), 1)))
+          for s in sigs:
+              s["marketWide"] = s["kind"] in wide
+              vr = s.get("volRatio")
+              s["confirmed"] = (not s["marketWide"]) or (vr is not None and vr >= VOL_CONFIRM)
+          confirmed = [s for s in sigs if s["confirmed"]]
+
           now = datetime.now(timezone.utc).isoformat(timespec="seconds")
           with open("data/levels.json", "w", encoding="utf-8") as fh:
               json.dump({"asof": asof, "generatedAt": now, "covered": len(out),
                          "failed": failed, "tickers": out}, fh, ensure_ascii=False)
           with open("data/signals.json", "w", encoding="utf-8") as fh:
-              json.dump({"asof": asof, "generatedAt": now, "items": sigs}, fh, ensure_ascii=False)
+              json.dump({"asof": asof, "generatedAt": now, "items": sigs,
+                         "confirmedCount": len(confirmed),
+                         "marketWideKinds": sorted(wide)}, fh, ensure_ascii=False)
 
           print("")
-          print("kapanis %s | %d hisse | %d sinyal | %d basarisiz" %
-                (asof, len(out), len(sigs), len(failed)))
+          print("kapanis %s | %d hisse | %d ham sinyal | %d teyitli | %d basarisiz" %
+                (asof, len(out), len(sigs), len(confirmed), len(failed)))
+          if wide:
+              print("piyasa geneli sayilan turler: " + ", ".join(sorted(wide)))
+
+          def group(items):
+              g = {}
+              for s in items:
+                  label = s["ticker"] + (" (hacim %.1fx)" % s["volRatio"]
+                                         if s.get("volRatio") and s["volRatio"] >= VOL_CONFIRM else "")
+                  g.setdefault(s["kind"], []).append(label)
+              return g
 
           lines = []
-          by_kind = {}
-          for s in sigs:
-              by_kind.setdefault(s["kind"], []).append(s["ticker"])
-          for k in sorted(by_kind, key=lambda x: -len(by_kind[x])):
-              lines.append("- **%s** — %s" % (k, ", ".join(sorted(set(by_kind[k])))))
-          body = ("Kapanis: **%s** · %d hisse tarandi · %d rejim degisimi.\n\n" % (asof, len(out), len(sigs))
-                  + ("\n".join(lines) if lines else "Bugun rejim degisimi yok.")
-                  + "\n\nBu liste iki yillik gunluk seriden mekanik olarak uretildi: ortalama kesisimleri, "
+          gc = group(confirmed)
+          for k in sorted(gc, key=lambda x: -len(gc[x])):
+              lines.append("- **%s** — %s" % (k, ", ".join(sorted(set(gc[k])))))
+          wide_lines = []
+          for k in sorted(wide):
+              n = sum(1 for s in sigs if s["kind"] == k)
+              nc = sum(1 for s in confirmed if s["kind"] == k)
+              wide_lines.append("- %s — %d isim (piyasa geneli; hacim teyidi olan %d tanesi yukarida)"
+                                % (k, n, nc))
+
+          body = ("Kapanis: **%s** · %d hisse tarandi · **%d teyitli sinyal** (%d ham).\n\n"
+                  % (asof, len(out), len(confirmed), len(sigs))
+                  + "## Teyitli\n"
+                  + ("\n".join(lines) if lines else "Bugun teyitli sinyal yok.")
+                  + ("\n\n## Piyasa geneli (tek tek listelenmedi)\n" + "\n".join(wide_lines)
+                     if wide_lines else "")
+                  + "\n\nBir sinyal turu evrenin ucte birinden fazlasinda ayni gun tetiklendiyse o gun "
+                    "piyasa genelinde olan bir seydir; tek tek listelenmez. Boyle bir sinyal ancak hacmi "
+                    "20 gun ortalamasinin %.1f katini astiysa teyitli sayilir.\n\n"
+                    "Bu liste iki yillik gunluk seriden mekanik olarak uretildi: ortalama kesisimleri, "
                     "20 gunluk kanal kirilimlari, MACD isaret degisimi, hacim sicramasi ve RSI bolge "
                     "degisimi. Bir trendin BASLADIGI anlamina gelmez, baslangic adayi anlamina gelir; "
                     "haber akisiyla birlikte okunmadan tek basina bir sey soylemez. "
-                    "Yatirim tavsiyesi degildir.\n")
+                    "Yatirim tavsiyesi degildir.\n" % VOL_CONFIRM)
           with open("issue-body.md", "w", encoding="utf-8") as fh:
               fh.write(body)
           with open(os.environ.get("GITHUB_ENV", "/dev/null"), "a", encoding="utf-8") as fh:
-              fh.write("SIGNAL_COUNT=%d\n" % len(sigs))
+              fh.write("SIGNAL_COUNT=%d\n" % len(confirmed))
               fh.write("ASOF=%s\n" % asof)
           PY
 
@@ -322,7 +364,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
-            --title "BIST Nabiz — $ASOF rejim degisimleri ($SIGNAL_COUNT)" \
+            --title "BIST Nabiz — $ASOF · $SIGNAL_COUNT teyitli sinyal" \
             --body-file issue-body.md
 
       - name: Sonucu depoya yaz
