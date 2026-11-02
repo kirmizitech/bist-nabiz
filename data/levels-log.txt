@@ -100,4 +100,5 @@ OK   VESTL     11.02  direnc 23.06,25.96,26.95  destek -  20 gunluk kanalin alti
 OK   YKBNK     33.96  direnc 34.69,35.85,36.77  destek 33.6,33.07,32.37  
 OK   ZOREN      1.13  direnc 2.67,2.78,2.93  destek -  20 gunluk kanalin altina indi
 
-kapanis 2026-10-30 | 100 hisse | 63 sinyal | 0 basarisiz
+kapanis 2026-10-30 | 100 hisse | 63 ham sinyal | 26 teyitli | 0 basarisiz
+piyasa geneli sayilan turler: 20 gunluk kanalin altina indi
