@@ -1,0 +1,455 @@
+name: Seviyeler ve rejim sinyalleri
+
+on:
+  schedule:
+    - cron: "12 16 * * 1-5"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/levels.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  levels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Seviyeleri hesapla
+        run: |
+          mkdir -p data/series
+          python3 - <<'PY' | tee data/levels-log.txt
+          import json, os, time, urllib.request
+          from datetime import datetime, timezone
+
+          UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
+
+          def tickers():
+              for path, key in (("tickers.json", None), ("data/latest.json", "rows")):
+                  try:
+                      with open(path, encoding="utf-8") as fh:
+                          d = json.load(fh)
+                      if key:
+                          return [r["ticker"] for r in d.get(key, [])]
+                      for k in ("bist100", "BIST100", "bist_100"):
+                          if isinstance(d.get(k), list) and d[k]:
+                              return list(d[k])
+                      if isinstance(d, list):
+                          return list(d)
+                  except Exception:
+                      continue
+              return []
+
+          def fetch(t, rng="2y"):
+              last = None
+              for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+                  try:
+                      url = ("https://" + host + "/v8/finance/chart/" + t +
+                             ".IS?range=" + rng + "&interval=1d")
+                      req = urllib.request.Request(url, headers=UA)
+                      d = json.loads(urllib.request.urlopen(req, timeout=25).read())
+                      r = d["chart"]["result"][0]
+                      ts = r["timestamp"]
+                      q = r["indicators"]["quote"][0]
+                      bars = []
+                      for i, x in enumerate(ts):
+                          c, h, l, v = q["close"][i], q["high"][i], q["low"][i], q["volume"][i]
+                          o = q.get("open", [None] * len(ts))[i]
+                          if c is None:
+                              continue
+                          bars.append({
+                              "d": datetime.fromtimestamp(x, timezone.utc).strftime("%Y-%m-%d"),
+                              "c": float(c),
+                              "o": float(o) if o is not None else float(c),
+                              "h": float(h) if h is not None else float(c),
+                              "l": float(l) if l is not None else float(c),
+                              "v": float(v) if v is not None else 0.0,
+                          })
+                      if len(bars) < 60:
+                          raise RuntimeError("yetersiz mum: %d" % len(bars))
+                      return bars
+                  except Exception as e:
+                      last = e
+              raise RuntimeError(str(last))
+
+          def back_adjust(bars):
+              """Bolunme / bedelsiz duzeltmesi: tek gunde makul olmayan oran kirilmasi
+              bulundugunda oncesindeki tum fiyatlar o oranla carpilarak seri birlestirilir."""
+              adj = False
+              for i in range(len(bars) - 2, -1, -1):
+                  prev, cur = bars[i]["c"], bars[i + 1]["c"]
+                  if prev <= 0:
+                      continue
+                  r = cur / prev
+                  if r < 0.45 or r > 2.2:
+                      for j in range(i + 1):
+                          bars[j]["c"] *= r
+                          bars[j]["o"] *= r
+                          bars[j]["h"] *= r
+                          bars[j]["l"] *= r
+                      adj = True
+              return adj
+
+          def sma(v, n):
+              return round(sum(v[-n:]) / n, 4) if len(v) >= n else None
+
+          def atr(bars, n=14):
+              if len(bars) < n + 1:
+                  return None
+              trs = []
+              for i in range(1, len(bars)):
+                  h, l, pc = bars[i]["h"], bars[i]["l"], bars[i - 1]["c"]
+                  trs.append(max(h - l, abs(h - pc), abs(l - pc)))
+              a = sum(trs[:n]) / n
+              for x in trs[n:]:
+                  a = (a * (n - 1) + x) / n
+              return round(a, 4)
+
+          def rsi14(cl, n=14):
+              if len(cl) < n + 1:
+                  return None
+              diffs = [b - a for a, b in zip(cl[:-1], cl[1:])]
+              g = sum(max(d, 0.0) for d in diffs[:n]) / n
+              l = sum(max(-d, 0.0) for d in diffs[:n]) / n
+              out = []
+              for d in diffs[n:]:
+                  g = (g * (n - 1) + max(d, 0.0)) / n
+                  l = (l * (n - 1) + max(-d, 0.0)) / n
+                  out.append(100.0 if l == 0 else 100 - 100 / (1 + g / l))
+              return [round(x, 2) for x in out] if out else None
+
+          def ema(v, n):
+              k = 2.0 / (n + 1)
+              e = v[0]
+              out = [e]
+              for x in v[1:]:
+                  e = x * k + e * (1 - k)
+                  out.append(e)
+              return out
+
+          def macd_hist(cl):
+              if len(cl) < 35:
+                  return None
+              f, s = ema(cl, 12), ema(cl, 26)
+              line = [a - b for a, b in zip(f, s)]
+              sig = ema(line[25:], 9)
+              return [round(line[25 + i] - sig[i], 4) for i in range(len(sig))]
+
+          def pivots(bars, w=5):
+              """Yerel tepe ve dipler: her iki yaninda w gun boyunca asilmayan noktalar."""
+              hi, lo = [], []
+              for i in range(w, len(bars) - w):
+                  win = bars[i - w:i + w + 1]
+                  if bars[i]["h"] >= max(b["h"] for b in win):
+                      hi.append((bars[i]["h"], bars[i]["d"]))
+                  if bars[i]["l"] <= min(b["l"] for b in win):
+                      lo.append((bars[i]["l"], bars[i]["d"]))
+              return hi, lo
+
+          def cluster(points, tol=0.015):
+              """Birbirine %1,5'ten yakin pivotlari tek seviyede topla."""
+              out = []
+              for price, day in sorted(points, key=lambda x: x[0]):
+                  if out and abs(price - out[-1]["sum"] / out[-1]["touches"]) / max(price, 1e-9) <= tol:
+                      out[-1]["sum"] += price
+                      out[-1]["touches"] += 1
+                      out[-1]["lastTouch"] = max(out[-1]["lastTouch"], day)
+                  else:
+                      out.append({"sum": price, "touches": 1, "lastTouch": day})
+              return [{"level": round(o["sum"] / o["touches"], 2),
+                       "touches": o["touches"], "lastTouch": o["lastTouch"]} for o in out]
+
+          def pick(levels, price, above, n=3):
+              sel = [x for x in levels if (x["level"] > price if above else x["level"] < price)]
+              sel.sort(key=lambda x: (abs(x["level"] - price) / max(price, 1e-9)) - 0.004 * x["touches"])
+              return sel[:n]
+
+          TICKERS = tickers()
+          print("hisse sayisi:", len(TICKERS))
+          out, sigs, failed = {}, [], []
+          asof = ""
+
+          for t in TICKERS:
+              try:
+                  bars = fetch(t)
+                  adjusted = back_adjust(bars)
+                  cl = [b["c"] for b in bars]
+                  vol = [b["v"] for b in bars]
+                  price = round(cl[-1], 4)
+                  asof = max(asof, bars[-1]["d"])
+
+                  s20, s50, s200 = sma(cl, 20), sma(cl, 50), sma(cl, 200)
+                  hi_p, lo_p = pivots(bars)
+                  res = pick(cluster(hi_p), price, True)
+                  sup = pick(cluster(lo_p), price, False)
+
+                  w20 = bars[-20:]
+                  w55 = bars[-55:]
+                  p20 = bars[-21:-1]
+                  hi20 = round(max(b["h"] for b in w20), 2)
+                  lo20 = round(min(b["l"] for b in w20), 2)
+                  hi20p = round(max(b["h"] for b in p20), 2) if len(p20) == 20 else None
+                  lo20p = round(min(b["l"] for b in p20), 2) if len(p20) == 20 else None
+                  hi55 = round(max(b["h"] for b in w55), 2)
+                  lo55 = round(min(b["l"] for b in w55), 2)
+                  height = round(hi20 - lo20, 2)
+
+                  yr = bars[-252:] if len(bars) >= 252 else bars
+                  high52 = round(max(b["h"] for b in yr), 2)
+                  low52 = round(min(b["l"] for b in yr), 2)
+
+                  rs = rsi14(cl)
+                  mh = macd_hist(cl)
+                  rsi_now = rs[-1] if rs else None
+                  rsi_prev = rs[-2] if rs and len(rs) > 1 else None
+                  mh_now = mh[-1] if mh else None
+                  mh_prev = mh[-2] if mh and len(mh) > 1 else None
+                  v20 = sum(vol[-21:-1]) / 20 if len(vol) >= 21 else None
+
+                  align = []
+                  if s20:
+                      align.append("kisa " + ("yukari" if price > s20 else "asagi"))
+                  if s50:
+                      align.append("orta " + ("yukari" if price > s50 else "asagi"))
+                  if s200:
+                      align.append("uzun " + ("yukari" if price > s200 else "asagi"))
+
+                  local = []
+                  prev_c = cl[-2] if len(cl) > 1 else None
+                  if s50 and prev_c:
+                      p50 = sma(cl[:-1], 50)
+                      if p50 and prev_c <= p50 and price > s50:
+                          local.append("SMA50 yukari kesisim")
+                      if p50 and prev_c >= p50 and price < s50:
+                          local.append("SMA50 asagi kesisim")
+                  if s200 and prev_c:
+                      p200 = sma(cl[:-1], 200)
+                      if p200 and prev_c <= p200 and price > s200:
+                          local.append("SMA200 yukari kesisim")
+                      if p200 and prev_c >= p200 and price < s200:
+                          local.append("SMA200 asagi kesisim")
+                  if hi20p and price > hi20p:
+                      local.append("20 gunluk kanalin ustune cikti")
+                  if lo20p and price < lo20p:
+                      local.append("20 gunluk kanalin altina indi")
+                  if mh_now is not None and mh_prev is not None:
+                      if mh_prev <= 0 < mh_now:
+                          local.append("MACD histogrami artiya dondu")
+                      if mh_prev >= 0 > mh_now:
+                          local.append("MACD histogrami eksiye dondu")
+                  if v20 and vol[-1] > 2 * v20:
+                      local.append("hacim 20 gun ortalamasinin %.1f kati" % (vol[-1] / v20))
+                  if rsi_now is not None and rsi_prev is not None:
+                      if rsi_prev < 30 <= rsi_now:
+                          local.append("RSI 30'un uzerine cikti")
+                      if rsi_prev > 70 >= rsi_now:
+                          local.append("RSI 70'in altina indi")
+
+                  out[t] = {
+                      "price": price, "high52": high52, "low52": low52, "atr14": atr(bars),
+                      "adjusted": adjusted, "bars": len(bars),
+                      "dayPct": (round((cl[-1] / cl[-2] - 1) * 100, 2)
+                                 if len(cl) > 1 and cl[-2] else None),
+                      "trend": {"sma20": s20, "sma50": s50, "sma200": s200,
+                                "align": ", ".join(align) if align else "belirsiz"},
+                      "resistances": res, "supports": sup,
+                      "donchian": {"hi20": hi20, "lo20": lo20, "hi55": hi55, "lo55": lo55},
+                      "projections": [
+                          {"type": "yukari kirilim", "trigger": hi20,
+                           "target": round(hi20 + height, 2),
+                           "basis": "20 gunluk kanal yuksekligi %.2f TL" % height},
+                          {"type": "asagi kirilim", "trigger": lo20,
+                           "target": round(max(lo20 - height, 0.01), 2),
+                           "basis": "20 gunluk kanal yuksekligi %.2f TL" % height}
+                      ],
+                      "signals": local
+                  }
+                  vol_ratio = round(vol[-1] / v20, 2) if v20 else None
+                  out[t]["volRatio"] = vol_ratio
+
+                  # Grafik icin seri dosyasi: son 130 islem gunu (yaklasik 6 ay).
+                  tail = bars[-130:]
+                  with open("data/series/%s.json" % t, "w", encoding="utf-8") as fh:
+                      json.dump({"ticker": t, "asof": tail[-1]["d"],
+                                 "dates": [b["d"] for b in tail],
+                                 "closes": [round(b["c"], 2) for b in tail],
+                                 "opens": [round(b["o"], 2) for b in tail],
+                                 "highs": [round(b["h"], 2) for b in tail],
+                                 "lows": [round(b["l"], 2) for b in tail],
+                                 "volumes": [int(b["v"]) for b in tail]},
+                                fh, ensure_ascii=False)
+                  for s in local:
+                      kind = s.split(" (")[0]
+                      if kind.startswith("hacim"):
+                          kind = "hacim sicramasi"
+                      sigs.append({"ticker": t, "kind": kind, "text": s,
+                                   "volRatio": vol_ratio})
+                  print("OK   %-6s %8.2f  direnc %s  destek %s  %s" %
+                        (t, price,
+                         ",".join(str(x["level"]) for x in res) or "-",
+                         ",".join(str(x["level"]) for x in sup) or "-",
+                         ("; ".join(local)) if local else ""))
+              except Exception as e:
+                  failed.append(t)
+                  print("FAIL %-6s %s: %s" % (t, type(e).__name__, e))
+              time.sleep(0.15)
+
+          # ---- gurultu ayiklama ----
+          # Ayni sinyal evrenin ucte birinden fazlasinda varsa o gun piyasa genelinde
+          # olan bir seydir; tek tek listelemek gurultu uretir. Boyle bir sinyal ancak
+          # hacim teyidi varsa kisisel sinyal sayilir.
+          VOL_CONFIRM = 2.0
+          counts = {}
+          for s in sigs:
+              counts[s["kind"]] = counts.get(s["kind"], 0) + 1
+          wide = set(k for k, v in counts.items() if v >= max(6, 0.12 * max(len(out), 1)))
+          for s in sigs:
+              s["marketWide"] = s["kind"] in wide
+              vr = s.get("volRatio")
+              s["confirmed"] = (not s["marketWide"]) or (vr is not None and vr >= VOL_CONFIRM)
+          confirmed = [s for s in sigs if s["confirmed"]]
+
+          now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+          with open("data/levels.json", "w", encoding="utf-8") as fh:
+              json.dump({"asof": asof, "generatedAt": now, "covered": len(out),
+                         "failed": failed, "tickers": out}, fh, ensure_ascii=False)
+          with open("data/signals.json", "w", encoding="utf-8") as fh:
+              json.dump({"asof": asof, "generatedAt": now, "items": sigs,
+                         "confirmedCount": len(confirmed),
+                         "marketWideKinds": sorted(wide)}, fh, ensure_ascii=False)
+
+          # ---- arsiv: gecmis silinmesin ----
+          # levels.json ve signals.json her gun uzerine yazilir. Burada hesaplanan
+          # sonuclar ayrica eklemeli (append-only) iki CSV'ye yazilir; boylece
+          # "bu isim gecen ay hangi sinyalleri verdi" ya da "bu sinyalden sonra
+          # fiyat ne yapti" sorulari sonradan cevaplanabilir.
+          import csv
+          os.makedirs("data/history", exist_ok=True)
+
+          def append_rows(path, header, rows, keyfn):
+              seen = set()
+              old = []
+              if os.path.exists(path):
+                  with open(path, newline="", encoding="utf-8") as fh:
+                      for r in csv.DictReader(fh):
+                          old.append(r)
+                          seen.add(keyfn(r))
+              fresh = [r for r in rows if keyfn(r) not in seen]
+              with open(path, "w", newline="", encoding="utf-8") as fh:
+                  w = csv.DictWriter(fh, fieldnames=header)
+                  w.writeheader()
+                  for r in old + fresh:
+                      w.writerow({k: r.get(k, "") for k in header})
+              return len(fresh)
+
+          sig_rows = [{"date": asof, "ticker": s["ticker"], "kind": s["kind"],
+                       "volRatio": s.get("volRatio") or "",
+                       "confirmed": int(bool(s.get("confirmed"))),
+                       "marketWide": int(bool(s.get("marketWide"))),
+                       "price": out[s["ticker"]]["price"]} for s in sigs]
+          n_sig = append_rows("data/history/signals-log.csv",
+                              ["date", "ticker", "kind", "volRatio", "confirmed",
+                               "marketWide", "price"],
+                              sig_rows, lambda r: (r["date"], r["ticker"], r["kind"]))
+
+          px_rows = [{"date": asof, "ticker": t, "close": o["price"],
+                      "dayPct": o.get("dayPct") if o.get("dayPct") is not None else "",
+                      "volRatio": o.get("volRatio") or "",
+                      "sma20": o["trend"]["sma20"] or "", "sma50": o["trend"]["sma50"] or "",
+                      "sma200": o["trend"]["sma200"] or "", "atr14": o["atr14"] or "",
+                      "high52": o["high52"], "low52": o["low52"]}
+                     for t, o in out.items()]
+          n_px = append_rows("data/history/daily-log.csv",
+                             ["date", "ticker", "close", "dayPct", "volRatio", "sma20",
+                              "sma50", "sma200", "atr14", "high52", "low52"],
+                             px_rows, lambda r: (r["date"], r["ticker"]))
+          print("arsiv: %d yeni sinyal satiri, %d yeni fiyat satiri" % (n_sig, n_px))
+
+          print("")
+          print("kapanis %s | %d hisse | %d ham sinyal | %d teyitli | %d basarisiz" %
+                (asof, len(out), len(sigs), len(confirmed), len(failed)))
+          if wide:
+              print("piyasa geneli sayilan turler: " + ", ".join(sorted(wide)))
+
+          def group(items):
+              g = {}
+              for s in items:
+                  label = s["ticker"] + (" (hacim %.1fx)" % s["volRatio"]
+                                         if s.get("volRatio") and s["volRatio"] >= VOL_CONFIRM else "")
+                  g.setdefault(s["kind"], []).append(label)
+              return g
+
+          lines = []
+          gc = group(confirmed)
+          for k in sorted(gc, key=lambda x: -len(gc[x])):
+              lines.append("- **%s** — %s" % (k, ", ".join(sorted(set(gc[k])))))
+          wide_lines = []
+          for k in sorted(wide):
+              n = sum(1 for s in sigs if s["kind"] == k)
+              nc = sum(1 for s in confirmed if s["kind"] == k)
+              wide_lines.append("- %s — %d isim (piyasa geneli; hacim teyidi olan %d tanesi yukarida)"
+                                % (k, n, nc))
+
+          chg = sorted(x for x in (o.get("dayPct") for o in out.values()) if x is not None)
+          med = chg[len(chg) // 2] if chg else 0.0
+          above = sum(1 for o in out.values()
+                      if o["trend"]["sma200"] and o["price"] > o["trend"]["sma200"])
+          owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
+          body = ((("@" + owner + "\n\n") if owner else "")
+                  + "Kapanis: **%s** · %d hisse tarandi · **%d teyitli sinyal** (%d ham).\n"
+                  % (asof, len(out), len(confirmed), len(sigs))
+                  + "Piyasa: gunluk degisimin ortancasi %%%.2f, %d/%d isim 200 gunluk ortalamasinin "
+                    "uzerinde.\n\n" % (med, above, len(out))
+                  + "## Teyitli\n"
+                  + ("\n".join(lines) if lines else "Bugun teyitli sinyal yok.")
+                  + ("\n\n## Piyasa geneli (tek tek listelenmedi)\n" + "\n".join(wide_lines)
+                     if wide_lines else "")
+                  + "\n\nBir sinyal turu evrenin ucte birinden fazlasinda ayni gun tetiklendiyse o gun "
+                    "piyasa genelinde olan bir seydir; tek tek listelenmez. Boyle bir sinyal ancak hacmi "
+                    "20 gun ortalamasinin %.1f katini astiysa teyitli sayilir.\n\n"
+                    "Bu liste iki yillik gunluk seriden mekanik olarak uretildi: ortalama kesisimleri, "
+                    "20 gunluk kanal kirilimlari, MACD isaret degisimi, hacim sicramasi ve RSI bolge "
+                    "degisimi. Bir trendin BASLADIGI anlamina gelmez, baslangic adayi anlamina gelir; "
+                    "haber akisiyla birlikte okunmadan tek basina bir sey soylemez. "
+                    "Yatirim tavsiyesi degildir.\n" % VOL_CONFIRM)
+          with open("issue-body.md", "w", encoding="utf-8") as fh:
+              fh.write(body)
+          with open(os.environ.get("GITHUB_ENV", "/dev/null"), "a", encoding="utf-8") as fh:
+              fh.write("SIGNAL_COUNT=%d\n" % len(confirmed))
+              fh.write("ASOF=%s\n" % asof)
+          PY
+
+      - name: Ozeti calisma sayfasina yaz
+        if: always()
+        run: |
+          echo '## Seviyeler ve sinyaller' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 40 data/levels-log.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo 'log yok' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Sinyal varsa issue ac
+        if: env.SIGNAL_COUNT != '' && env.SIGNAL_COUNT != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "BIST Nabiz — $ASOF · $SIGNAL_COUNT teyitli sinyal" \
+            --assignee "${{ github.repository_owner }}" \
+            --body-file issue-body.md
+
+      - name: Sonucu depoya yaz
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data
+          if git diff --staged --quiet; then
+            echo "Degisiklik yok."
+          else
+            git commit -m "seviyeler: $ASOF"
+            git pull --rebase --autostash || true
+            git push
+          fi
