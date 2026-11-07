@@ -1,0 +1,33 @@
+date,ticker,kind,volRatio,confirmed,marketWide,price
+2026-11-06,ALARK,MACD histogrami artiya dondu,0.88,1,0,101.8
+2026-11-06,BIMAS,MACD histogrami artiya dondu,0.83,1,0,371.75
+2026-11-06,BRSAN,SMA50 yukari kesisim,1.68,1,0,682.0
+2026-11-06,CVKMD,SMA50 yukari kesisim,1.6,1,0,14.54
+2026-11-06,CVKMD,SMA200 yukari kesisim,1.6,1,0,14.54
+2026-11-06,CVKMD,20 gunluk kanalin ustune cikti,1.6,1,0,14.54
+2026-11-06,DAPGM,RSI 30'un uzerine cikti,0.92,1,0,2.44
+2026-11-06,DOAS,hacim sicramasi,2.91,1,0,134.8
+2026-11-06,DOHOL,hacim sicramasi,2.58,1,0,18.02
+2026-11-06,DSTKF,hacim sicramasi,6.35,1,0,70.6
+2026-11-06,EKGYO,MACD histogrami artiya dondu,0.8,1,0,17.66
+2026-11-06,ENERY,MACD histogrami artiya dondu,0.75,1,0,14.05
+2026-11-06,ENJSA,20 gunluk kanalin ustune cikti,1.4,1,0,122.0
+2026-11-06,FROTO,hacim sicramasi,2.7,1,0,73.15
+2026-11-06,GARAN,20 gunluk kanalin ustune cikti,1.85,1,0,144.3
+2026-11-06,IEYHO,hacim sicramasi,4.35,1,0,6.06
+2026-11-06,KCHOL,SMA200 yukari kesisim,1.42,1,0,206.1
+2026-11-06,KRDMD,hacim sicramasi,2.01,1,0,36.16
+2026-11-06,KTLEV,hacim sicramasi,2.5,1,0,4.86
+2026-11-06,MIATK,MACD histogrami artiya dondu,0.55,1,0,24.16
+2026-11-06,PGSUS,SMA50 yukari kesisim,1.31,1,0,141.6
+2026-11-06,RALYH,20 gunluk kanalin altina indi,2.33,1,0,6.18
+2026-11-06,RALYH,hacim sicramasi,2.33,1,0,6.18
+2026-11-06,SISE,hacim sicramasi,2.0,1,0,34.24
+2026-11-06,SOKM,20 gunluk kanalin altina indi,6.54,1,0,48.44
+2026-11-06,SOKM,hacim sicramasi,6.54,1,0,48.44
+2026-11-06,TCELL,MACD histogrami eksiye dondu,1.47,1,0,90.0
+2026-11-06,TOASO,hacim sicramasi,3.28,1,0,243.0
+2026-11-06,TRMET,MACD histogrami artiya dondu,0.99,1,0,111.9
+2026-11-06,VAKBN,MACD histogrami artiya dondu,1.51,1,0,33.06
+2026-11-06,YKBNK,SMA200 yukari kesisim,1.35,1,0,37.24
+2026-11-06,YKBNK,20 gunluk kanalin ustune cikti,1.35,1,0,37.24

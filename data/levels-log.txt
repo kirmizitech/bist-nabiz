@@ -77,7 +77,7 @@ OK   RALYH      6.18  direnc 56.41,59.41,80.12  destek -  20 gunluk kanalin alti
 OK   REEDR      2.71  direnc 3.74,5.8,7.2  destek 2.3  
 OK   SAHOL     87.30  direnc 87.9,89.73,92.75  destek 86.75,84.6,82.52  
 OK   SARKY     16.38  direnc 17.11,22.8,26.86  destek 15.98,14.6,14.02  
-OK   SASA       1.58  direnc 2.42,2.62,2.66  destek -  hacim 20 gun ortalamasinin 3.4 kati
+OK   SASA       1.58  direnc 2.42,2.62,2.66  destek -  
 OK   SISE      34.24  direnc 34.56,35.52,38.09  destek 34.12,32.68,31.94  hacim 20 gun ortalamasinin 2.0 kati
 OK   SKBNK      3.66  direnc 4.31,4.56,4.82  destek -  
 OK   SOKM      48.44  direnc 49.34,51.68,56.08  destek 46.96,44.11,39.1  20 gunluk kanalin altina indi; hacim 20 gun ortalamasinin 6.5 kati
@@ -99,5 +99,6 @@ OK   VAKBN     33.06  direnc 33.67,34.54,35.44  destek 32.13,31.06,30.44  MACD h
 OK   VESTL     12.80  direnc 23.06,25.96,26.95  destek -  
 OK   YKBNK     37.24  direnc 37.71,39.14,39.92  destek 36.74,35.81,34.82  SMA200 yukari kesisim; 20 gunluk kanalin ustune cikti
 OK   ZOREN      1.33  direnc 2.67,2.78,2.93  destek -  
+arsiv: 32 yeni sinyal satiri, 100 yeni fiyat satiri
 
-kapanis 2026-11-06 | 100 hisse | 33 ham sinyal | 33 teyitli | 0 basarisiz
+kapanis 2026-11-06 | 100 hisse | 32 ham sinyal | 32 teyitli | 0 basarisiz
