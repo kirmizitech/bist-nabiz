@@ -20,7 +20,7 @@ jobs:
 
       - name: Seviyeleri hesapla
         run: |
-          mkdir -p data
+          mkdir -p data/series
           python3 - <<'PY' | tee data/levels-log.txt
           import json, os, time, urllib.request
           from datetime import datetime, timezone
@@ -57,11 +57,13 @@ jobs:
                       bars = []
                       for i, x in enumerate(ts):
                           c, h, l, v = q["close"][i], q["high"][i], q["low"][i], q["volume"][i]
+                          o = q.get("open", [None] * len(ts))[i]
                           if c is None:
                               continue
                           bars.append({
                               "d": datetime.fromtimestamp(x, timezone.utc).strftime("%Y-%m-%d"),
                               "c": float(c),
+                              "o": float(o) if o is not None else float(c),
                               "h": float(h) if h is not None else float(c),
                               "l": float(l) if l is not None else float(c),
                               "v": float(v) if v is not None else 0.0,
@@ -85,6 +87,7 @@ jobs:
                   if r < 0.45 or r > 2.2:
                       for j in range(i + 1):
                           bars[j]["c"] *= r
+                          bars[j]["o"] *= r
                           bars[j]["h"] *= r
                           bars[j]["l"] *= r
                       adj = True
@@ -248,6 +251,8 @@ jobs:
                   out[t] = {
                       "price": price, "high52": high52, "low52": low52, "atr14": atr(bars),
                       "adjusted": adjusted, "bars": len(bars),
+                      "dayPct": (round((cl[-1] / cl[-2] - 1) * 100, 2)
+                                 if len(cl) > 1 and cl[-2] else None),
                       "trend": {"sma20": s20, "sma50": s50, "sma200": s200,
                                 "align": ", ".join(align) if align else "belirsiz"},
                       "resistances": res, "supports": sup,
@@ -264,6 +269,18 @@ jobs:
                   }
                   vol_ratio = round(vol[-1] / v20, 2) if v20 else None
                   out[t]["volRatio"] = vol_ratio
+
+                  # Grafik icin seri dosyasi: son 130 islem gunu (yaklasik 6 ay).
+                  tail = bars[-130:]
+                  with open("data/series/%s.json" % t, "w", encoding="utf-8") as fh:
+                      json.dump({"ticker": t, "asof": tail[-1]["d"],
+                                 "dates": [b["d"] for b in tail],
+                                 "closes": [round(b["c"], 2) for b in tail],
+                                 "opens": [round(b["o"], 2) for b in tail],
+                                 "highs": [round(b["h"], 2) for b in tail],
+                                 "lows": [round(b["l"], 2) for b in tail],
+                                 "volumes": [int(b["v"]) for b in tail]},
+                                fh, ensure_ascii=False)
                   for s in local:
                       kind = s.split(" (")[0]
                       if kind.startswith("hacim"):
@@ -284,11 +301,11 @@ jobs:
           # Ayni sinyal evrenin ucte birinden fazlasinda varsa o gun piyasa genelinde
           # olan bir seydir; tek tek listelemek gurultu uretir. Boyle bir sinyal ancak
           # hacim teyidi varsa kisisel sinyal sayilir.
-          VOL_CONFIRM = 1.5
+          VOL_CONFIRM = 2.0
           counts = {}
           for s in sigs:
               counts[s["kind"]] = counts.get(s["kind"], 0) + 1
-          wide = set(k for k, v in counts.items() if v >= max(8, 0.33 * max(len(out), 1)))
+          wide = set(k for k, v in counts.items() if v >= max(6, 0.12 * max(len(out), 1)))
           for s in sigs:
               s["marketWide"] = s["kind"] in wide
               vr = s.get("volRatio")
@@ -303,6 +320,53 @@ jobs:
               json.dump({"asof": asof, "generatedAt": now, "items": sigs,
                          "confirmedCount": len(confirmed),
                          "marketWideKinds": sorted(wide)}, fh, ensure_ascii=False)
+
+          # ---- arsiv: gecmis silinmesin ----
+          # levels.json ve signals.json her gun uzerine yazilir. Burada hesaplanan
+          # sonuclar ayrica eklemeli (append-only) iki CSV'ye yazilir; boylece
+          # "bu isim gecen ay hangi sinyalleri verdi" ya da "bu sinyalden sonra
+          # fiyat ne yapti" sorulari sonradan cevaplanabilir.
+          import csv
+          os.makedirs("data/history", exist_ok=True)
+
+          def append_rows(path, header, rows, keyfn):
+              seen = set()
+              old = []
+              if os.path.exists(path):
+                  with open(path, newline="", encoding="utf-8") as fh:
+                      for r in csv.DictReader(fh):
+                          old.append(r)
+                          seen.add(keyfn(r))
+              fresh = [r for r in rows if keyfn(r) not in seen]
+              with open(path, "w", newline="", encoding="utf-8") as fh:
+                  w = csv.DictWriter(fh, fieldnames=header)
+                  w.writeheader()
+                  for r in old + fresh:
+                      w.writerow({k: r.get(k, "") for k in header})
+              return len(fresh)
+
+          sig_rows = [{"date": asof, "ticker": s["ticker"], "kind": s["kind"],
+                       "volRatio": s.get("volRatio") or "",
+                       "confirmed": int(bool(s.get("confirmed"))),
+                       "marketWide": int(bool(s.get("marketWide"))),
+                       "price": out[s["ticker"]]["price"]} for s in sigs]
+          n_sig = append_rows("data/history/signals-log.csv",
+                              ["date", "ticker", "kind", "volRatio", "confirmed",
+                               "marketWide", "price"],
+                              sig_rows, lambda r: (r["date"], r["ticker"], r["kind"]))
+
+          px_rows = [{"date": asof, "ticker": t, "close": o["price"],
+                      "dayPct": o.get("dayPct") if o.get("dayPct") is not None else "",
+                      "volRatio": o.get("volRatio") or "",
+                      "sma20": o["trend"]["sma20"] or "", "sma50": o["trend"]["sma50"] or "",
+                      "sma200": o["trend"]["sma200"] or "", "atr14": o["atr14"] or "",
+                      "high52": o["high52"], "low52": o["low52"]}
+                     for t, o in out.items()]
+          n_px = append_rows("data/history/daily-log.csv",
+                             ["date", "ticker", "close", "dayPct", "volRatio", "sma20",
+                              "sma50", "sma200", "atr14", "high52", "low52"],
+                             px_rows, lambda r: (r["date"], r["ticker"]))
+          print("arsiv: %d yeni sinyal satiri, %d yeni fiyat satiri" % (n_sig, n_px))
 
           print("")
           print("kapanis %s | %d hisse | %d ham sinyal | %d teyitli | %d basarisiz" %
@@ -329,8 +393,16 @@ jobs:
               wide_lines.append("- %s — %d isim (piyasa geneli; hacim teyidi olan %d tanesi yukarida)"
                                 % (k, n, nc))
 
-          body = ("Kapanis: **%s** · %d hisse tarandi · **%d teyitli sinyal** (%d ham).\n\n"
+          chg = sorted(x for x in (o.get("dayPct") for o in out.values()) if x is not None)
+          med = chg[len(chg) // 2] if chg else 0.0
+          above = sum(1 for o in out.values()
+                      if o["trend"]["sma200"] and o["price"] > o["trend"]["sma200"])
+          owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
+          body = ((("@" + owner + "\n\n") if owner else "")
+                  + "Kapanis: **%s** · %d hisse tarandi · **%d teyitli sinyal** (%d ham).\n"
                   % (asof, len(out), len(confirmed), len(sigs))
+                  + "Piyasa: gunluk degisimin ortancasi %%%.2f, %d/%d isim 200 gunluk ortalamasinin "
+                    "uzerinde.\n\n" % (med, above, len(out))
                   + "## Teyitli\n"
                   + ("\n".join(lines) if lines else "Bugun teyitli sinyal yok.")
                   + ("\n\n## Piyasa geneli (tek tek listelenmedi)\n" + "\n".join(wide_lines)
@@ -365,6 +437,7 @@ jobs:
         run: |
           gh issue create \
             --title "BIST Nabiz — $ASOF · $SIGNAL_COUNT teyitli sinyal" \
+            --assignee "${{ github.repository_owner }}" \
             --body-file issue-body.md
 
       - name: Sonucu depoya yaz
