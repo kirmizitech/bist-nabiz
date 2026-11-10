@@ -1,0 +1,483 @@
+name: Haftalik seri, evren endeksi ve taban oranlari
+
+on:
+  schedule:
+    - cron: "48 17 * * 1-5"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/analytics.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Haftalik, endeks ve taban oranlarini hesapla
+        run: |
+          mkdir -p data/weekly
+          python3 - <<'PY' | tee data/analytics-log.txt
+          import json, os, time, urllib.request, math
+          from datetime import datetime, timezone
+
+          def tickers():
+              for path, key in (("tickers.json", None), ("data/latest.json", "rows")):
+                  try:
+                      with open(path, encoding="utf-8") as fh:
+                          d = json.load(fh)
+                      if key:
+                          return [r["ticker"] for r in d.get(key, [])]
+                      for k in ("bist100", "BIST100", "bist_100"):
+                          if isinstance(d.get(k), list) and d[k]:
+                              return list(d[k])
+                      if isinstance(d, list):
+                          return list(d)
+                  except Exception:
+                      continue
+              return []
+
+          def fetch(t, rng="2y"):
+              last = None
+              for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+                  try:
+                      url = ("https://" + host + "/v8/finance/chart/" + t +
+                             ".IS?range=" + rng + "&interval=1d")
+                      req = urllib.request.Request(url, headers=UA)
+                      d = json.loads(urllib.request.urlopen(req, timeout=25).read())
+                      r = d["chart"]["result"][0]
+                      ts = r["timestamp"]
+                      q = r["indicators"]["quote"][0]
+                      bars = []
+                      for i, x in enumerate(ts):
+                          c, h, l, v = q["close"][i], q["high"][i], q["low"][i], q["volume"][i]
+                          o = q.get("open", [None] * len(ts))[i]
+                          if c is None:
+                              continue
+                          bars.append({
+                              "d": datetime.fromtimestamp(x, timezone.utc).strftime("%Y-%m-%d"),
+                              "c": float(c),
+                              "o": float(o) if o is not None else float(c),
+                              "h": float(h) if h is not None else float(c),
+                              "l": float(l) if l is not None else float(c),
+                              "v": float(v) if v is not None else 0.0,
+                          })
+                      if len(bars) < 60:
+                          raise RuntimeError("yetersiz mum: %d" % len(bars))
+                      return bars
+                  except Exception as e:
+                      last = e
+              raise RuntimeError(str(last))
+
+          def back_adjust(bars):
+              """Bolunme / bedelsiz duzeltmesi: tek gunde makul olmayan oran kirilmasi
+              bulundugunda oncesindeki tum fiyatlar o oranla carpilarak seri birlestirilir."""
+              adj = False
+              for i in range(len(bars) - 2, -1, -1):
+                  prev, cur = bars[i]["c"], bars[i + 1]["c"]
+                  if prev <= 0:
+                      continue
+                  r = cur / prev
+                  if r < 0.45 or r > 2.2:
+                      for j in range(i + 1):
+                          bars[j]["c"] *= r
+                          bars[j]["o"] *= r
+                          bars[j]["h"] *= r
+                          bars[j]["l"] *= r
+                      adj = True
+              return adj
+
+          # ---------- gostergeler ----------
+
+          def ema_list(v, n):
+              if len(v) < n:
+                  return [None] * len(v)
+              out = [None] * len(v)
+              k = 2.0 / (n + 1)
+              e = sum(v[:n]) / n
+              out[n - 1] = e
+              for i in range(n, len(v)):
+                  e = v[i] * k + e * (1 - k)
+                  out[i] = e
+              return out
+
+
+          def rsi_list(cl, n=14):
+              out = [None] * len(cl)
+              if len(cl) < n + 1:
+                  return out
+              g = l = 0.0
+              for i in range(1, n + 1):
+                  d = cl[i] - cl[i - 1]
+                  g += max(d, 0.0)
+                  l += max(-d, 0.0)
+              g /= n
+              l /= n
+              out[n] = 100.0 if l == 0 else 100 - 100 / (1 + g / l)
+              for i in range(n + 1, len(cl)):
+                  d = cl[i] - cl[i - 1]
+                  g = (g * (n - 1) + max(d, 0.0)) / n
+                  l = (l * (n - 1) + max(-d, 0.0)) / n
+                  out[i] = 100.0 if l == 0 else 100 - 100 / (1 + g / l)
+              return out
+
+
+          def sma_list(v, n):
+              out = [None] * len(v)
+              s = 0.0
+              for i, x in enumerate(v):
+                  s += x
+                  if i >= n:
+                      s -= v[i - n]
+                  if i >= n - 1:
+                      out[i] = s / n
+              return out
+
+
+          def bbw_list(cl, n=20, k=2):
+              out = [None] * len(cl)
+              for i in range(n - 1, len(cl)):
+                  w = cl[i - n + 1:i + 1]
+                  m = sum(w) / n
+                  sd = math.sqrt(sum((x - m) ** 2 for x in w) / n)
+                  out[i] = (2 * k * sd) / m * 100 if m else None
+              return out
+
+
+          def pct_rank(series, i, look=130):
+              """i. degerin son look pencerede yuzdelik sirasi"""
+              v = series[i]
+              if v is None:
+                  return None
+              lo = max(0, i - look + 1)
+              w = [x for x in series[lo:i + 1] if x is not None]
+              if len(w) < 20:
+                  return None
+              return round(100.0 * sum(1 for x in w if x < v) / len(w))
+
+
+          # ---------- haftalik ----------
+
+          def to_weekly(bars):
+              """pazartesi-cuma gruplari; her hafta son barin tarihiyle etiketlenir"""
+              import datetime
+              weeks = {}
+              order = []
+              for b in bars:
+                  d = datetime.date.fromisoformat(b["d"])
+                  key = (d - datetime.timedelta(days=d.weekday())).isoformat()
+                  if key not in weeks:
+                      weeks[key] = {"d": b["d"], "o": b["o"], "h": b["h"], "l": b["l"],
+                                    "c": b["c"], "v": b["v"]}
+                      order.append(key)
+                  else:
+                      w = weeks[key]
+                      w["d"] = b["d"]
+                      w["h"] = max(w["h"], b["h"])
+                      w["l"] = min(w["l"], b["l"])
+                      w["c"] = b["c"]
+                      w["v"] += b["v"]
+              return [weeks[k] for k in order]
+
+
+          def weekly_payload(t, bars, keep=120):
+              wk = to_weekly(bars)
+              if len(wk) < 30:
+                  return None
+              cl = [b["c"] for b in wk]
+              rsi = rsi_list(cl)
+              e12, e26 = ema_list(cl, 12), ema_list(cl, 26)
+              line = [None if (e12[i] is None or e26[i] is None) else e12[i] - e26[i]
+                      for i in range(len(cl))]
+              valid = [x for x in line if x is not None]
+              sig = ema_list(valid, 9) if len(valid) >= 9 else []
+              hist = None
+              if sig and sig[-1] is not None:
+                  hist = line[-1] - sig[-1]
+              s10, s30 = sma_list(cl, 10), sma_list(cl, 30)
+              tail = wk[-keep:]
+              return {
+                  "ticker": t, "asof": wk[-1]["d"], "bars": len(wk),
+                  "dates": [b["d"] for b in tail],
+                  "opens": [round(b["o"], 4) for b in tail],
+                  "highs": [round(b["h"], 4) for b in tail],
+                  "lows": [round(b["l"], 4) for b in tail],
+                  "closes": [round(b["c"], 4) for b in tail],
+                  "volumes": [round(b["v"], 2) for b in tail],
+                  "rsi14": None if rsi[-1] is None else round(rsi[-1], 2),
+                  "macdHist": None if hist is None else round(hist, 4),
+                  "sma10": None if s10[-1] is None else round(s10[-1], 4),
+                  "sma30": None if s30[-1] is None else round(s30[-1], 4),
+                  "chg4w": round((cl[-1] / cl[-5] - 1) * 100, 2) if len(cl) > 5 else None,
+                  "chg13w": round((cl[-1] / cl[-14] - 1) * 100, 2) if len(cl) > 14 else None,
+              }
+
+
+          # ---------- evren endeksi, goreli guc, beta ----------
+
+          def build_index(hist):
+              """hist: {ticker: bars}. Esit agirlikli gunluk getiri endeksi."""
+              dates = {}
+              for t, bars in hist.items():
+                  for i in range(1, len(bars)):
+                      p, c = bars[i - 1]["c"], bars[i]["c"]
+                      if p > 0:
+                          dates.setdefault(bars[i]["d"], []).append(c / p - 1)
+              ds = sorted(dates)
+              lvl, idx = 100.0, []
+              for d in ds:
+                  r = sum(dates[d]) / len(dates[d])
+                  lvl *= (1 + r)
+                  idx.append({"d": d, "v": round(lvl, 4), "r": round(r * 100, 4), "n": len(dates[d])})
+              return idx
+
+
+          def rel_stats(bars, idx_by_date):
+              """beta, korelasyon ve goreli guc"""
+              rs, ri = [], []
+              for i in range(1, len(bars)):
+                  d = bars[i]["d"]
+                  if d not in idx_by_date:
+                      continue
+                  p, c = bars[i - 1]["c"], bars[i]["c"]
+                  if p <= 0:
+                      continue
+                  rs.append(c / p - 1)
+                  ri.append(idx_by_date[d] / 100.0)
+              n = len(rs)
+              if n < 60:
+                  return None
+              rs, ri = rs[-250:], ri[-250:]
+              n = len(rs)
+              ms, mi = sum(rs) / n, sum(ri) / n
+              cov = sum((rs[i] - ms) * (ri[i] - mi) for i in range(n)) / n
+              vi = sum((x - mi) ** 2 for x in ri) / n
+              vs = sum((x - ms) ** 2 for x in rs) / n
+              beta = cov / vi if vi else None
+              corr = cov / math.sqrt(vi * vs) if vi and vs else None
+
+              def rel(k):
+                  if len(bars) <= k:
+                      return None
+                  sret = bars[-1]["c"] / bars[-1 - k]["c"] - 1
+                  ds = [b["d"] for b in bars[-1 - k:]]
+                  iret = 1.0
+                  for d in ds[1:]:
+                      if d in idx_by_date:
+                          iret *= (1 + idx_by_date[d] / 100.0)
+                  return round((sret - (iret - 1)) * 100, 2)
+
+              return {"beta": None if beta is None else round(beta, 2),
+                      "korelasyon": None if corr is None else round(corr, 2),
+                      "rs1a": rel(21), "rs3a": rel(63), "rs6a": rel(126)}
+
+
+          # ---------- taban oranlari ----------
+
+          RSI_B = [(0, 30, "rsi<30"), (30, 45, "rsi30-45"), (45, 55, "rsi45-55"),
+                   (55, 70, "rsi55-70"), (70, 101, "rsi>70")]
+
+
+          def bucket(rsi, c, s50, s200, bbp, vr):
+              rb = None
+              for lo, hi, name in RSI_B:
+                  if lo <= rsi < hi:
+                      rb = name
+                      break
+              if rb is None:
+                  return None
+              if s50 is None or s200 is None:
+                  return None
+              if c > s50 and c > s200:
+                  tb = "ikisinin-ustunde"
+              elif c < s50 and c < s200:
+                  tb = "ikisinin-altinda"
+              else:
+                  tb = "karisik"
+              if bbp is None:
+                  return None
+              bb = "sikisik" if bbp < 20 else ("genis" if bbp > 80 else "normal")
+              vb = "hacim<1" if vr < 1 else ("hacim>2" if vr > 2 else "hacim1-2")
+              return "|".join([rb, tb, bb, vb])
+
+
+          def quant(v, q):
+              if not v:
+                  return None
+              s = sorted(v)
+              i = (len(s) - 1) * q
+              lo, hi = int(math.floor(i)), int(math.ceil(i))
+              return s[lo] if lo == hi else s[lo] + (s[hi] - s[lo]) * (i - lo)
+
+
+          def base_rates(hist, fwd=(10, 20)):
+              cells = {}
+              allf = {k: [] for k in fwd}
+              for t, bars in hist.items():
+                  cl = [b["c"] for b in bars]
+                  vol = [b["v"] for b in bars]
+                  if len(cl) < 230:
+                      continue
+                  rsi = rsi_list(cl)
+                  s50, s200 = sma_list(cl, 50), sma_list(cl, 200)
+                  bbw = bbw_list(cl)
+                  v20 = sma_list(vol, 20)
+                  last = len(cl) - max(fwd) - 1
+                  for i in range(210, last + 1):
+                      if rsi[i] is None or bbw[i] is None or not v20[i]:
+                          continue
+                      bbp = pct_rank(bbw, i)
+                      vr = vol[i] / v20[i] if v20[i] else None
+                      if bbp is None or vr is None:
+                          continue
+                      key = bucket(rsi[i], cl[i], s50[i], s200[i], bbp, vr)
+                      if not key:
+                          continue
+                      cell = cells.setdefault(key, {k: [] for k in fwd})
+                      for k in fwd:
+                          r = (cl[i + k] / cl[i] - 1) * 100
+                          cell[k].append(r)
+                          allf[k].append(r)
+              out = {}
+              for key, c in cells.items():
+                  n = len(c[fwd[0]])
+                  if n < 30:
+                      continue
+                  row = {"n": n}
+                  for k in fwd:
+                      v = c[k]
+                      row["g%d" % k] = {
+                          "ortanca": round(quant(v, 0.5), 2),
+                          "pozitifPay": round(100.0 * sum(1 for x in v if x > 0) / len(v)),
+                          "p25": round(quant(v, 0.25), 2),
+                          "p75": round(quant(v, 0.75), 2),
+                      }
+                  out[key] = row
+              genel = {}
+              for k in fwd:
+                  v = allf[k]
+                  genel["g%d" % k] = {
+                      "ortanca": round(quant(v, 0.5), 2) if v else None,
+                      "pozitifPay": round(100.0 * sum(1 for x in v if x > 0) / len(v)) if v else None,
+                      "n": len(v),
+                  }
+              return {"hucreler": out, "genel": genel}
+
+
+          def current_bucket(bars):
+              cl = [b["c"] for b in bars]
+              vol = [b["v"] for b in bars]
+              if len(cl) < 210:
+                  return None
+              rsi = rsi_list(cl)
+              s50, s200 = sma_list(cl, 50), sma_list(cl, 200)
+              bbw = bbw_list(cl)
+              v20 = sma_list(vol, 20)
+              i = len(cl) - 1
+              if rsi[i] is None or bbw[i] is None or not v20[i]:
+                  return None
+              bbp = pct_rank(bbw, i)
+              vr = vol[i] / v20[i] if v20[i] else None
+              if bbp is None or vr is None:
+                  return None
+              return bucket(rsi[i], cl[i], s50[i], s200[i], bbp, vr)
+
+
+          # ---------- ana akis ----------
+
+          def main():
+              ts = tickers()
+              if not ts:
+                  print("ticker listesi bulunamadi")
+                  return
+              os.makedirs("data/weekly", exist_ok=True)
+              hist, fails = {}, []
+              for t in ts:
+                  try:
+                      bars = fetch(t)
+                      if back_adjust(bars):
+                          print("%s: bolunme duzeltmesi uygulandi" % t)
+                      hist[t] = bars
+                  except Exception as e:
+                      fails.append("%s (%s)" % (t, e))
+                  time.sleep(0.25)
+              print("veri alinan: %d / %d" % (len(hist), len(ts)))
+              if fails:
+                  print("alinamayan: " + ", ".join(fails[:12]))
+              if len(hist) < 20:
+                  print("yeterli veri yok, cikiliyor")
+                  return
+
+              asof = max(b[-1]["d"] for b in hist.values())
+              now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+              # 1) haftalik seriler
+              wok = 0
+              for t, bars in hist.items():
+                  w = weekly_payload(t, bars)
+                  if not w:
+                      continue
+                  with open("data/weekly/%s.json" % t, "w", encoding="utf-8") as fh:
+                      json.dump(w, fh, ensure_ascii=False, separators=(",", ":"))
+                  wok += 1
+              print("haftalik seri yazilan: %d" % wok)
+
+              # 2) evren endeksi + goreli guc
+              idx = build_index(hist)
+              ibd = {r["d"]: r["r"] for r in idx}
+              rel = {}
+              for t, bars in hist.items():
+                  r = rel_stats(bars, ibd)
+                  if r:
+                      rel[t] = r
+              rs1 = sorted((v["rs1a"], t) for t, v in rel.items() if v.get("rs1a") is not None)
+              with open("data/index.json", "w", encoding="utf-8") as fh:
+                  json.dump({"asof": asof, "generatedAt": now, "ad": "Esit agirlikli evren endeksi",
+                             "kapsam": len(hist), "seri": idx[-260:], "hisseler": rel},
+                            fh, ensure_ascii=False, separators=(",", ":"))
+              print("endeks yazildi: %d bar, %d hisse icin goreli guc" % (len(idx), len(rel)))
+              if rs1:
+                  print("endeksten en guclu 5: " + ", ".join("%s %+0.1f" % (t, v) for v, t in rs1[-5:][::-1]))
+                  print("endeksten en zayif 5: " + ", ".join("%s %+0.1f" % (t, v) for v, t in rs1[:5]))
+
+              # 3) taban oranlari
+              br = base_rates(hist)
+              cur = {}
+              for t, bars in hist.items():
+                  k = current_bucket(bars)
+                  if k:
+                      cur[t] = k
+              br.update({"asof": asof, "generatedAt": now, "kapsam": len(hist), "bugun": cur,
+                         "aciklama": ("Her bar, RSI bandi / ortalamalara gore konum / Bollinger genisligi "
+                                      "yuzdeligi / hacim orani dortlusuyle bir hucreye atanir; hucrenin "
+                                      "sonraki 10 ve 20 gunluk getiri dagilimi tum evrenin iki yillik "
+                                      "gecmisinden sayilir. Bu bir tahmin degil, gecmis siklik dagilimidir.")})
+              with open("data/baserates.json", "w", encoding="utf-8") as fh:
+                  json.dump(br, fh, ensure_ascii=False, separators=(",", ":"))
+              print("taban oranlari: %d hucre, genel 10 gun ortanca %s, pozitif pay %s%%"
+                    % (len(br["hucreler"]), br["genel"]["g10"]["ortanca"], br["genel"]["g10"]["pozitifPay"]))
+              big = sorted(br["hucreler"].items(), key=lambda kv: -kv[1]["n"])[:5]
+              for k, v in big:
+                  print("  %s: n=%d, 10g ortanca %+0.2f%%, pozitif %d%%"
+                        % (k, v["n"], v["g10"]["ortanca"], v["g10"]["pozitifPay"]))
+
+
+          main()
+
+          PY
+
+      - name: Depoya yaz
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data
+          if git diff --staged --quiet; then
+            echo "degisiklik yok"
+          else
+            git commit -m "analitik: haftalik, endeks, taban oranlari"
+            git pull --rebase --autostash || true
+            git push
+          fi

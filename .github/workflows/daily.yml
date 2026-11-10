@@ -34,8 +34,16 @@ jobs:
           from datetime import datetime, timezone
 
           UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
-          BIST30 = ["AEFES", "AKBNK", "ASELS", "ASTOR", "BIMAS", "DSTKF", "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "ISCTR", "KCHOL", "KRDMD", "MGROS", "PETKM", "PGSUS", "SAHOL", "SASA", "SISE", "TAVHL", "TCELL", "THYAO", "TOASO", "TRALT", "TTKOM", "TUPRS", "VAKBN", "YKBNK"]
-          BIST100 = ["AEFES", "AKBNK", "AKSA", "AKSEN", "ALARK", "ALTNY", "ANSGR", "ARCLK", "ASELS", "ASTOR", "BALSU", "BERA", "BIMAS", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "CANTE", "CCOLA", "CIMSA", "CVKMD", "CWENE", "DAPGM", "DOAS", "DOHOL", "DSTKF", "ECILC", "EFOR", "EKGYO", "ENERY", "ENJSA", "ENKAI", "EREGL", "ESEN", "EUPWR", "EUREN", "FENER", "FROTO", "GARAN", "GENIL", "GESAN", "GLRMK", "GRSEL", "GRTHO", "GSRAY", "GUBRF", "HALKB", "HEKTS", "IEYHO", "ISCTR", "ISMEN", "IZENR", "KCHOL", "KLRHO", "KRDMD", "KTLEV", "KUYAS", "MAGEN", "MAVI", "MGROS", "MIATK", "MPARK", "OBAMS", "ODAS", "ODINE", "OTKAR", "OYAKC", "PAHOL", "PASEU", "PATEK", "PETKM", "PGSUS", "PSGYO", "QUAGR", "RALYH", "REEDR", "SAHOL", "SARKY", "SASA", "SISE", "SKBNK", "SOKM", "TAVHL", "TCELL", "THYAO", "TKFEN", "TOASO", "TRALT", "TRENJ", "TRMET", "TSKB", "TTKOM", "TUKAS", "TUPRS", "TURSG", "ULKER", "VAKBN", "VESTL", "YKBNK", "ZOREN"]
+          BIST30 = ["AEFES", "AKBNK", "ASELS", "ASTOR", "BIMAS", "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "ISCTR", "KCHOL", "KRDMD", "MGROS", "PETKM", "PGSUS", "SAHOL", "SASA", "SISE", "TAVHL", "TCELL", "THYAO", "TOASO", "TRALT", "TRMET", "TTKOM", "TUPRS", "VAKBN", "YKBNK"]
+          BIST100 = ["AEFES", "AGHOL", "AHGAZ", "AKBNK", "AKCNS", "AKFYE", "AKSA", "AKSEN", "ALARK", "ALBRK", "ALTNY", "ANHYT", "ANSGR", "ARCLK", "ASELS", "ASTOR", "AYGAZ", "BERA", "BIMAS", "BINHO", "BRSAN", "BRYAT", "BTCIM", "CANTE", "CCOLA", "CIMSA", "CVKMD", "CWENE", "DOAS", "DOHOL", "ECILC", "ECZYT", "EGEEN", "EGGUB", "EKGYO", "ENERY", "ENJSA", "ENKAI", "ENTRA", "EREGL", "EUREN", "FENER", "FROTO", "GARAN", "GLRMK", "GLYHO", "GRSEL", "GUBRF", "GWIND", "HALKB", "HEKTS", "ISCTR", "ISDMR", "ISMEN", "KARSN", "KATMR", "KCAER", "KCHOL", "KORDS", "KRDMD", "LMKDC", "MAVI", "MGROS", "MPARK", "OBAMS", "ODAS", "OTKAR", "OYAKC", "PAHOL", "PETKM", "PGSUS", "RGYAS", "RYSAS", "SAHOL", "SASA", "SISE", "SNGYO", "SOKM", "TABGD", "TAVHL", "TCELL", "TCKRC", "THYAO", "TKFEN", "TOASO", "TRALT", "TRENJ", "TRGYO", "TRMET", "TSKB", "TTKOM", "TTRAK", "TUKAS", "TUPRS", "TURSG", "ULKER", "VAKBN", "VESTL", "YKBNK", "ZOREN"]
+          # Endeks disi, elle takip edilen isimler:
+          # Endeksten cikmis ama istersen takip edebilecegin isimler, EKSTRA listesine ekle:
+          # BALSU, BSOKE, DAPGM, DSTKF, EFOR, ESEN, EUPWR, GENIL, GESAN, GRTHO, GSRAY, IEYHO, IZENR, KLRHO, KTLEV, KUYAS, MAGEN, MIATK, ODINE, PASEU, PATEK, PSGYO, QUAGR, RALYH, REEDR, SARKY, SKBNK
+          EKSTRA = []
+          for _x in EKSTRA:
+              if _x not in BIST100:
+                  BIST100.append(_x)
+          BIST100.sort()
           ONLY30 = os.environ.get("ONLY30", "").lower() == "true"
           DISCLAIMER = ("Bu sayfa yatirim tavsiyesi degildir ve lisansli bir finansal danisman tarafindan "
                         "hazirlanmamistir. Icerik objektif, kurallari sabit bir teknik gosterge taramasidir; "
@@ -142,14 +150,48 @@ jobs:
               return None
 
 
+          def back_adjust(s):
+              """Acik bolunme / bedelsiz duzeltmesi: tek gunde 0,45 - 2,20 araligi disina
+              cikan oran bulundugunda oncesindeki tum kapanislar o oranla carpilir."""
+              c = s["closes"]
+              adj = False
+              for i in range(len(c) - 2, -1, -1):
+                  if c[i] <= 0:
+                      continue
+                  r = c[i + 1] / c[i]
+                  if r < 0.45 or r > 2.2:
+                      for j in range(i + 1):
+                          c[j] = round(c[j] * r, 4)
+                      adj = True
+              return adj
+
+
+          def discontinuity(s):
+              """BIST gunluk fiyat limiti yuzde 10'dur. Duzeltmeden sonra bu bandin
+              disinda kalan bir gun varsa seride sermaye islemi ya da uzun bir durdurma
+              vardir; uzun pencereli gostergeler o seride guvenilmez."""
+              c, d = s["closes"], s["dates"]
+              for i in range(1, len(c)):
+                  if c[i - 1] <= 0:
+                      continue
+                  ch = (c[i] / c[i - 1] - 1) * 100
+                  if abs(ch) > 11.0:
+                      return {"tarih": d[i] if i < len(d) else "", "degisim": round(ch, 1)}
+              return None
+
+
           def compute(s):
+              adjusted = back_adjust(s)
+              kopus = discontinuity(s)
               c = s["closes"]
               m = macd(c)
               return {"price": c[-1], "asof": s["dates"][-1], "volume": s["volumes"][-1] if s["volumes"] else None,
                       "change1d": pct(c, 1), "change5d": pct(c, 5), "change1m": pct(c, 21), "change3m": pct(c, 63),
                       "changeYtd": ytd(s), "rsi14": rsi14(c), "macdHist": m["hist"] if m else None,
                       "sma20": sma(c, 20), "sma50": sma(c, 50), "sma200": sma(c, 200),
-                      "bars": len(c), "source": s.get("source")}
+                      "bars": len(c), "source": s.get("source"),
+                      "adjusted": adjusted, "suspect": bool(kopus),
+                      "kopus": kopus}
 
 
           # ---------------- veri toplama ----------------
@@ -198,7 +240,7 @@ jobs:
           asof = sorted({r["asof"] for r in rows})
           data = {"generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": asof[-1],
                   "asofSpread": asof if len(asof) > 1 else None,
-                  "universe": "BIST 30" if ONLY30 else "BIST 100",
+                  "universe": "BIST 30" if ONLY30 else ("BIST 100 + %d ek isim" % len(EKSTRA) if EKSTRA else "BIST 100"),
                   "rows": sorted(rows, key=lambda r: r["ticker"]), "failures": fails,
                   "screen": screen, "summary": summary}
           with open("data/latest.json", "w", encoding="utf-8") as fh:
