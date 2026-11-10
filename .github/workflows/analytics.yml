@@ -24,6 +24,8 @@ jobs:
           import json, os, time, urllib.request, math
           from datetime import datetime, timezone
 
+          UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
+
           def tickers():
               for path, key in (("tickers.json", None), ("data/latest.json", "rows")):
                   try:
