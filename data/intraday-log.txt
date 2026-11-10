@@ -1,0 +1,4 @@
+seans ici veri alinan: 100 / 100
+intraday.json yazildi: 2026-11-10 22:51, ortanca gun -1.33%, kapsam 100
+en cok artan: IEYHO +9.91%, KTLEV +9.84%, TCELL +6.13%, ALARK +6.08%, PGSUS +5.39%
+en cok dusen: EUPWR -10.00%, GLRMK -9.97%, GESAN -9.97%, CWENE -9.96%, RALYH -9.87%
