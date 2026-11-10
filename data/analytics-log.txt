@@ -1,3 +1,17 @@
-veri alinan: 0 / 100
-alinamayan: AEFES (name 'UA' is not defined), AKBNK (name 'UA' is not defined), AKSA (name 'UA' is not defined), AKSEN (name 'UA' is not defined), ALARK (name 'UA' is not defined), ALTNY (name 'UA' is not defined), ANSGR (name 'UA' is not defined), ARCLK (name 'UA' is not defined), ASELS (name 'UA' is not defined), ASTOR (name 'UA' is not defined), BALSU (name 'UA' is not defined), BERA (name 'UA' is not defined)
-yeterli veri yok, cikiliyor
+BSOKE: bolunme duzeltmesi uygulandi
+CVKMD: bolunme duzeltmesi uygulandi
+EUREN: bolunme duzeltmesi uygulandi
+FENER: bolunme duzeltmesi uygulandi
+GSRAY: bolunme duzeltmesi uygulandi
+TUKAS: bolunme duzeltmesi uygulandi
+veri alinan: 100 / 100
+haftalik seri yazilan: 100
+endeks yazildi: 501 bar, 100 hisse icin goreli guc
+endeksten en guclu 5: GARAN +35.9, PGSUS +30.6, TAVHL +25.7, THYAO +24.9, YKBNK +24.3
+endeksten en zayif 5: RALYH -72.0, DSTKF -67.2, IEYHO -63.2, PATEK -26.3, TURSG -23.8
+taban oranlari: 72 hucre, genel 10 gun ortanca -0.54, pozitif pay 47%
+  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2325, 10g ortanca -0.72%, pozitif 45%
+  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=1950, 10g ortanca -0.71%, pozitif 47%
+  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1465, 10g ortanca +0.20%, pozitif 51%
+  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1371, 10g ortanca +0.00%, pozitif 50%
+  rsi30-45|karisik|normal|hacim<1: n=1052, 10g ortanca -0.23%, pozitif 48%
