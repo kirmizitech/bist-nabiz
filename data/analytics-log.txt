@@ -1,0 +1,3 @@
+veri alinan: 0 / 100
+alinamayan: AEFES (name 'UA' is not defined), AKBNK (name 'UA' is not defined), AKSA (name 'UA' is not defined), AKSEN (name 'UA' is not defined), ALARK (name 'UA' is not defined), ALTNY (name 'UA' is not defined), ANSGR (name 'UA' is not defined), ARCLK (name 'UA' is not defined), ASELS (name 'UA' is not defined), ASTOR (name 'UA' is not defined), BALSU (name 'UA' is not defined), BERA (name 'UA' is not defined)
+yeterli veri yok, cikiliyor
