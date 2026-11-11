@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-11 13:25, ortanca gun 0.41%, kapsam 100
-en cok artan: IEYHO +9.97%, PASEU +9.94%, KTLEV +9.86%, BTCIM +7.37%, KLRHO +6.77%
-en cok dusen: RALYH -9.96%, GLRMK -9.92%, EUPWR -7.37%, GRSEL -4.78%, GESAN -4.51%
+intraday.json yazildi: 2026-11-11 14:23, ortanca gun 0.25%, kapsam 100
+en cok artan: IEYHO +9.97%, PASEU +9.94%, KTLEV +9.86%, KLRHO +8.26%, BTCIM +7.37%
+en cok dusen: RALYH -9.96%, GLRMK -9.92%, EUPWR -9.77%, GESAN -5.04%, GRSEL -4.69%
