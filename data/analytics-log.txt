@@ -1,17 +1,15 @@
-BSOKE: bolunme duzeltmesi uygulandi
 CVKMD: bolunme duzeltmesi uygulandi
 EUREN: bolunme duzeltmesi uygulandi
 FENER: bolunme duzeltmesi uygulandi
-GSRAY: bolunme duzeltmesi uygulandi
 TUKAS: bolunme duzeltmesi uygulandi
 veri alinan: 100 / 100
 haftalik seri yazilan: 100
-endeks yazildi: 501 bar, 100 hisse icin goreli guc
-endeksten en guclu 5: GARAN +35.9, PGSUS +30.6, TAVHL +25.7, THYAO +24.9, YKBNK +24.3
-endeksten en zayif 5: RALYH -72.0, DSTKF -67.2, IEYHO -63.2, PATEK -26.3, TURSG -23.8
-taban oranlari: 72 hucre, genel 10 gun ortanca -0.54, pozitif pay 47%
-  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2325, 10g ortanca -0.72%, pozitif 45%
-  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=1950, 10g ortanca -0.71%, pozitif 47%
-  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1465, 10g ortanca +0.20%, pozitif 51%
-  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1371, 10g ortanca +0.00%, pozitif 50%
-  rsi30-45|karisik|normal|hacim<1: n=1052, 10g ortanca -0.23%, pozitif 48%
+endeks yazildi: 502 bar, 100 hisse icin goreli guc
+endeksten en guclu 5: GARAN +28.3, PGSUS +25.5, TAVHL +21.3, THYAO +19.2, TUKAS +18.1
+endeksten en zayif 5: TURSG -32.4, BINHO -28.2, GUBRF -21.5, PAHOL -17.6, VESTL -17.5
+taban oranlari: 67 hucre, genel 10 gun ortanca -0.48, pozitif pay 47%
+  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2321, 10g ortanca -0.25%, pozitif 48%
+  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2106, 10g ortanca -1.23%, pozitif 43%
+  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1629, 10g ortanca -0.07%, pozitif 49%
+  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1487, 10g ortanca -0.82%, pozitif 45%
+  rsi30-45|karisik|normal|hacim<1: n=1176, 10g ortanca +0.07%, pozitif 50%
