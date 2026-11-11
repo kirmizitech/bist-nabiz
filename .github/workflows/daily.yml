@@ -36,6 +36,116 @@ jobs:
           UA = {"User-Agent": "Mozilla/5.0 (compatible; bist-nabiz/1.0)"}
           BIST30 = ["AEFES", "AKBNK", "ASELS", "ASTOR", "BIMAS", "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "ISCTR", "KCHOL", "KRDMD", "MGROS", "PETKM", "PGSUS", "SAHOL", "SASA", "SISE", "TAVHL", "TCELL", "THYAO", "TOASO", "TRALT", "TRMET", "TTKOM", "TUPRS", "VAKBN", "YKBNK"]
           BIST100 = ["AEFES", "AGHOL", "AHGAZ", "AKBNK", "AKCNS", "AKFYE", "AKSA", "AKSEN", "ALARK", "ALBRK", "ALTNY", "ANHYT", "ANSGR", "ARCLK", "ASELS", "ASTOR", "AYGAZ", "BERA", "BIMAS", "BINHO", "BRSAN", "BRYAT", "BTCIM", "CANTE", "CCOLA", "CIMSA", "CVKMD", "CWENE", "DOAS", "DOHOL", "ECILC", "ECZYT", "EGEEN", "EGGUB", "EKGYO", "ENERY", "ENJSA", "ENKAI", "ENTRA", "EREGL", "EUREN", "FENER", "FROTO", "GARAN", "GLRMK", "GLYHO", "GRSEL", "GUBRF", "GWIND", "HALKB", "HEKTS", "ISCTR", "ISDMR", "ISMEN", "KARSN", "KATMR", "KCAER", "KCHOL", "KORDS", "KRDMD", "LMKDC", "MAVI", "MGROS", "MPARK", "OBAMS", "ODAS", "OTKAR", "OYAKC", "PAHOL", "PETKM", "PGSUS", "RGYAS", "RYSAS", "SAHOL", "SASA", "SISE", "SNGYO", "SOKM", "TABGD", "TAVHL", "TCELL", "TCKRC", "THYAO", "TKFEN", "TOASO", "TRALT", "TRENJ", "TRGYO", "TRMET", "TSKB", "TTKOM", "TTRAK", "TUKAS", "TUPRS", "TURSG", "ULKER", "VAKBN", "VESTL", "YKBNK", "ZOREN"]
+          # ---- endeks listesi: Borsa Istanbul'un yayimladigi bilesen dosyasindan ----
+          # Liste her calismada resmi dosyadan okunur. Dosya alinamazsa, bicimi
+          # beklenmedikse ya da sayilar mantiksizsa yukaridaki elle yazilmis listeler
+          # kullanilir; boylece kaynak bozulsa da gunluk calisma durmaz.
+          import re as _re, zipfile as _zf
+
+          def _bilesen_dosyasi():
+              son = None
+              for host in ("www.borsaistanbul.com", "borsaistanbul.com"):
+                  try:
+                      req = urllib.request.Request("https://" + host + "/datum/hisse_endeks_ds.csv", headers=UA)
+                      ham = urllib.request.urlopen(req, timeout=30).read()
+                      if ham[:2] == b"PK":
+                          with _zf.ZipFile(io.BytesIO(ham)) as z:
+                              ad = [n for n in z.namelist() if n.lower().endswith(".csv")][0]
+                              ham = z.read(ad)
+                      for enc in ("utf-8-sig", "cp1254", "latin-1"):
+                          try:
+                              return ham.decode(enc), host
+                          except UnicodeDecodeError:
+                              continue
+                  except Exception as e:
+                      son = e
+              raise RuntimeError(str(son))
+
+          def _endeks_listeleri(metin):
+              satir = [s for s in metin.splitlines() if s.strip()]
+              if not satir:
+                  return {}
+              ayr = ";" if satir[0].count(";") >= satir[0].count(",") else ","
+              tablo = list(csv.reader(satir, delimiter=ayr))
+              bas = [h.strip().upper() for h in tablo[0]]
+              def sutun(*anahtar):
+                  for i, h in enumerate(bas):
+                      hh = h.replace("İ", "I").replace("Ş", "S").replace("_", " ")
+                      if all(a in hh for a in anahtar):
+                          return i
+                  return None
+              kod_i = sutun("BILESEN", "KOD")
+              end_i = sutun("ENDEKS", "KOD")
+              govde = tablo[1:] if (kod_i is not None or end_i is not None) else tablo
+              if end_i is None:
+                  for r in govde[:500]:
+                      for i, x in enumerate(r):
+                          if x.strip().upper() in ("XU100", "XU030"):
+                              end_i = i
+                              break
+                      if end_i is not None:
+                          break
+              if kod_i is None:
+                  kod_i = 0
+              if end_i is None:
+                  return {}
+              out = {}
+              for r in govde:
+                  if len(r) <= max(kod_i, end_i):
+                      continue
+                  e = r[end_i].strip().upper()
+                  k = r[kod_i].strip().upper()
+                  if k.endswith(".E"):
+                      k = k[:-2]
+                  if _re.fullmatch(r"[A-Z0-9]{3,6}", k):
+                      out.setdefault(e, [])
+                      if k not in out[e]:
+                          out[e].append(k)
+              return out
+
+          KAYNAK_LISTE = "elle yazilmis liste (daily.yml)"
+          try:
+              _metin, _host = _bilesen_dosyasi()
+              _l = _endeks_listeleri(_metin)
+              _b100, _b30 = sorted(_l.get("XU100", [])), sorted(_l.get("XU030", []))
+              if 95 <= len(_b100) <= 105:
+                  _onceki = list(BIST100)
+                  BIST100 = _b100
+                  KAYNAK_LISTE = "Borsa Istanbul bilesen dosyasi (" + _host + ")"
+                  if 28 <= len(_b30) <= 32 and all(x in BIST100 for x in _b30):
+                      BIST30 = _b30
+                  else:
+                      BIST30 = [x for x in BIST30 if x in BIST100]
+                      print("BIST 30 listesi dosyadan dogrulanamadi (%d isim); elle yazilmis liste kullanildi" % len(_b30))
+                  _ek = sorted(set(BIST100) - set(_onceki)); _cik = sorted(set(_onceki) - set(BIST100))
+                  print("endeks listesi: %s, BIST 100 %d isim, BIST 30 %d isim" % (KAYNAK_LISTE, len(BIST100), len(BIST30)))
+                  if _ek or _cik:
+                      print("elle yazilmis listeye gore eklenen: %s; cikan: %s"
+                            % (", ".join(_ek) or "yok", ", ".join(_cik) or "yok"))
+              else:
+                  print("bilesen dosyasinda BIST 100 icin %d isim bulundu; mantiksiz, elle yazilmis liste kullanildi" % len(_b100))
+          except Exception as _e:
+              print("bilesen dosyasi alinamadi (%s); elle yazilmis liste kullanildi" % str(_e)[:120])
+
+          # endeks degisimini kalici olarak kaydet: sayfa ve ajanlar buradan okur
+          try:
+              _eski = {}
+              if os.path.exists("data/universe.json"):
+                  with open("data/universe.json", encoding="utf-8") as _fh:
+                      _eski = json.load(_fh)
+              _ebist = _eski.get("bist100") or []
+              _degisim = _eski.get("degisimler") or []
+              if _ebist and sorted(_ebist) != sorted(BIST100):
+                  _degisim.append({"tarih": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                                   "eklenen": sorted(set(BIST100) - set(_ebist)),
+                                   "cikan": sorted(set(_ebist) - set(BIST100))})
+              os.makedirs("data", exist_ok=True)
+              with open("data/universe.json", "w", encoding="utf-8") as _fh:
+                  json.dump({"guncelleme": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                             "kaynak": KAYNAK_LISTE, "bist100": BIST100, "bist30": BIST30,
+                             "degisimler": _degisim[-12:]}, _fh, ensure_ascii=False, indent=1)
+          except Exception as _e:
+              print("universe.json yazilamadi: %s" % str(_e)[:120])
           # Endeks disi, elle takip edilen isimler:
           # Endeksten cikmis ama istersen takip edebilecegin isimler, EKSTRA listesine ekle:
           # BALSU, BSOKE, DAPGM, DSTKF, EFOR, ESEN, EUPWR, GENIL, GESAN, GRTHO, GSRAY, IEYHO, IZENR, KLRHO, KTLEV, KUYAS, MAGEN, MIATK, ODINE, PASEU, PATEK, PSGYO, QUAGR, RALYH, REEDR, SARKY, SKBNK
@@ -241,6 +351,7 @@ jobs:
           data = {"generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": asof[-1],
                   "asofSpread": asof if len(asof) > 1 else None,
                   "universe": "BIST 30" if ONLY30 else ("BIST 100 + %d ek isim" % len(EKSTRA) if EKSTRA else "BIST 100"),
+                  "universeSource": KAYNAK_LISTE,
                   "rows": sorted(rows, key=lambda r: r["ticker"]), "failures": fails,
                   "screen": screen, "summary": summary}
           with open("data/latest.json", "w", encoding="utf-8") as fh:
