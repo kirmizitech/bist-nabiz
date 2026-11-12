@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-12 11:13, ortanca gun 1.61%, kapsam 100
-en cok artan: VESTL +10.00%, ZOREN +9.70%, BINHO +6.90%, TCKRC +5.17%, GLRMK +5.11%
-en cok dusen: BTCIM -2.50%, TRMET -1.07%, TRENJ -0.97%, TRALT -0.77%, GRSEL -0.38%
+intraday.json yazildi: 2026-11-12 12:28, ortanca gun 1.4%, kapsam 100
+en cok artan: VESTL +10.00%, ZOREN +9.70%, BINHO +7.16%, ASTOR +7.01%, GLRMK +5.90%
+en cok dusen: BTCIM -3.50%, TRMET -2.32%, TRENJ -1.68%, TRALT -1.24%, AHGAZ -0.74%
