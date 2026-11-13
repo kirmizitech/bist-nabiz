@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-13 14:22, ortanca gun 0.0%, kapsam 100
-en cok artan: CWENE +6.18%, VESTL +4.12%, AKSA +3.88%, ZOREN +3.40%, CCOLA +3.09%
-en cok dusen: ASTOR -3.67%, AKFYE -1.95%, HALKB -1.76%, TKFEN -1.71%, DOAS -1.68%
+intraday.json yazildi: 2026-11-13 15:21, ortanca gun 0.58%, kapsam 100
+en cok artan: CWENE +7.43%, TCKRC +6.14%, AKSA +4.36%, CCOLA +4.27%, MPARK +3.26%
+en cok dusen: ASTOR -3.50%, TUKAS -2.74%, TKFEN -2.49%, AKFYE -1.63%, DOAS -1.52%
