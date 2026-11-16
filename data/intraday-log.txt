@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-16 13:55, ortanca gun 0.25%, kapsam 100
-en cok artan: VESTL +9.99%, ZOREN +9.40%, GLRMK +6.19%, KATMR +6.14%, PAHOL +6.10%
-en cok dusen: ASTOR -1.53%, TUKAS -1.52%, SISE -1.45%, HALKB -1.43%, ALARK -1.28%
+intraday.json yazildi: 2026-11-16 14:57, ortanca gun 0.24%, kapsam 100
+en cok artan: VESTL +9.99%, ZOREN +9.40%, GLRMK +8.60%, PAHOL +7.32%, KATMR +7.02%
+en cok dusen: SISE -2.01%, ALARK -1.83%, HALKB -1.57%, TKFEN -1.11%, AKSEN -1.11%
