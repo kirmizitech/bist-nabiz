@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-17 11:13, ortanca gun -0.56%, kapsam 100
-en cok artan: EGGUB +3.56%, ZOREN +2.53%, PGSUS +2.35%, BINHO +1.64%, BRSAN +0.69%
-en cok dusen: BTCIM -3.52%, GLRMK -3.44%, AYGAZ -2.45%, TCKRC -2.36%, LMKDC -2.13%
+intraday.json yazildi: 2026-11-17 12:29, ortanca gun -0.63%, kapsam 100
+en cok artan: EGGUB +8.84%, BINHO +5.39%, PGSUS +2.73%, PAHOL +2.30%, BERA +1.95%
+en cok dusen: BTCIM -3.02%, TABGD -3.01%, GLRMK -2.27%, AYGAZ -2.18%, OTKAR -2.11%
