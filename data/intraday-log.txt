@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-17 18:46, ortanca gun -1.5%, kapsam 100
-en cok artan: EGGUB +9.94%, BINHO +7.96%, BERA +2.05%, TKFEN +1.91%, PAHOL +1.15%
-en cok dusen: GLRMK -4.77%, RYSAS -4.00%, TTRAK -3.69%, HEKTS -3.53%, BTCIM -3.52%
+intraday.json yazildi: 2026-11-18 11:11, ortanca gun -0.21%, kapsam 100
+en cok artan: TKFEN +3.07%, ASELS +2.12%, TCELL +2.08%, CCOLA +1.90%, LMKDC +1.28%
+en cok dusen: VESTL -7.24%, ZOREN -5.03%, PAHOL -4.55%, BINHO -4.12%, TRALT -2.22%
