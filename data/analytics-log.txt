@@ -5,11 +5,11 @@ TUKAS: bolunme duzeltmesi uygulandi
 veri alinan: 100 / 100
 haftalik seri yazilan: 100
 endeks yazildi: 502 bar, 100 hisse icin goreli guc
-endeksten en guclu 5: THYAO +25.7, PGSUS +24.3, TCKRC +22.2, EGEEN +14.5, GARAN +14.5
-endeksten en zayif 5: TURSG -30.2, AKFYE -22.2, SOKM -21.8, GUBRF -21.0, PETKM -15.8
-taban oranlari: 67 hucre, genel 10 gun ortanca -0.58, pozitif pay 47%
-  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2432, 10g ortanca -0.52%, pozitif 46%
-  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2067, 10g ortanca -1.22%, pozitif 43%
-  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1579, 10g ortanca +0.00%, pozitif 50%
-  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1456, 10g ortanca -0.79%, pozitif 45%
-  rsi30-45|karisik|normal|hacim<1: n=1177, 10g ortanca -0.06%, pozitif 49%
+endeksten en guclu 5: THYAO +28.9, PGSUS +25.9, TCKRC +22.6, BTCIM +18.9, ENERY +17.7
+endeksten en zayif 5: TURSG -27.8, AKFYE -25.3, SOKM -24.1, GUBRF -19.4, PETKM -16.5
+taban oranlari: 67 hucre, genel 10 gun ortanca -0.55, pozitif pay 47%
+  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2445, 10g ortanca -0.46%, pozitif 46%
+  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2052, 10g ortanca -1.19%, pozitif 43%
+  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1565, 10g ortanca +0.09%, pozitif 50%
+  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1450, 10g ortanca -0.76%, pozitif 46%
+  rsi30-45|karisik|normal|hacim<1: n=1182, 10g ortanca -0.08%, pozitif 49%
