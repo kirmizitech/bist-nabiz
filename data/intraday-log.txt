@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-20 17:48, ortanca gun -2.42%, kapsam 100
-en cok artan: EGGUB +4.14%, BTCIM +1.67%, ENTRA +0.67%, AKSA +0.57%, RYSAS +0.00%
-en cok dusen: CVKMD -9.79%, ASTOR -5.82%, VESTL -5.51%, TURSG -5.18%, AGHOL -5.08%
+intraday.json yazildi: 2026-11-20 18:49, ortanca gun -2.39%, kapsam 100
+en cok artan: EGGUB +4.60%, BTCIM +3.33%, ANSGR +1.10%, AKSA +0.85%, TRGYO +0.59%
+en cok dusen: CVKMD -9.95%, VESTL -5.80%, AGHOL -5.30%, TURSG -5.18%, ASTOR -4.77%
