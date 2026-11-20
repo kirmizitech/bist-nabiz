@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-19 19:29, ortanca gun -0.37%, kapsam 100
-en cok artan: TCKRC +3.65%, TOASO +3.14%, HALKB +2.98%, FENER +2.40%, ISDMR +2.35%
-en cok dusen: BINHO -6.27%, TTRAK -3.70%, PAHOL -3.70%, TUPRS -3.18%, BTCIM -2.70%
+intraday.json yazildi: 2026-11-20 11:13, ortanca gun -2.28%, kapsam 100
+en cok artan: ENTRA +1.56%, CCOLA -0.13%, GRSEL -0.42%, TUKAS -0.54%, GLYHO -0.72%
+en cok dusen: CVKMD -8.67%, VESTL -5.65%, TRMET -5.16%, TRENJ -4.76%, ECZYT -4.28%
