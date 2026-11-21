@@ -1,4 +1,4 @@
-name: Haftalik seri, evren endeksi ve taban oranlari
+name: Haftalik seri, evren endeksi, taban oranlari ve desenler
 
 on:
   schedule:
@@ -16,6 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: numpy kur (desen motoru icin; kurulamazsa yavas yol kullanilir)
+        run: python3 -m pip install --quiet numpy || echo "numpy kurulamadi"
 
       - name: Haftalik, endeks ve taban oranlarini hesapla
         run: |
@@ -390,6 +397,349 @@ jobs:
 
           # ---------- ana akis ----------
 
+
+          # ---------- desen (pattern) ve analog motoru ----------
+          # Her hisse-gun icin trendi anlatan bir ozellik vektoru cikarilir. Bugunun vektorune
+          # en cok benzeyen gecmis hisse-gunler (analoglar) bulunur ve onlardan sonra fiyatin
+          # 1..H gun icinde ne yaptigi dagilim olarak raporlanir. Ileriye bakis yoktur: bir
+          # analog ancak H gunluk sonucu karar tarihinden once tamamlanmissa havuza girer.
+
+          H_ILERI = 10
+          K_ANALOG = 40
+          AGIRLIK = {"eg20": 1.5, "eg60": 1.5, "r2": 1.0, "ema21": 1.0, "ema55": 1.0, "rsi": 1.0,
+                     "bbg": 0.7, "zirve20": 1.0, "dip20": 1.0, "r5": 1.0, "hacim": 0.5}
+          OZ = list(AGIRLIK.keys())
+
+
+          def _ema(v, n):
+              out = [None] * len(v)
+              if len(v) < n:
+                  return out
+              k = 2.0 / (n + 1)
+              e = sum(v[:n]) / n
+              out[n - 1] = e
+              for i in range(n, len(v)):
+                  e = v[i] * k + e * (1 - k)
+                  out[i] = e
+              return out
+
+
+          def _rsi(c, n=14):
+              out = [None] * len(c)
+              if len(c) < n + 1:
+                  return out
+              g = l = 0.0
+              for i in range(1, n + 1):
+                  d = c[i] - c[i - 1]
+                  g += max(d, 0.0)
+                  l += max(-d, 0.0)
+              g /= n
+              l /= n
+              out[n] = 100.0 if l == 0 else 100 - 100 / (1 + g / l)
+              for i in range(n + 1, len(c)):
+                  d = c[i] - c[i - 1]
+                  g = (g * (n - 1) + max(d, 0.0)) / n
+                  l = (l * (n - 1) + max(-d, 0.0)) / n
+                  out[i] = 100.0 if l == 0 else 100 - 100 / (1 + g / l)
+              return out
+
+
+          def _egim(y):
+              """ln fiyata dogrusal uyum: gunluk yuzde egim ve R kare"""
+              n = len(y)
+              xm = (n - 1) / 2.0
+              ym = sum(y) / n
+              sxx = sum((i - xm) ** 2 for i in range(n))
+              sxy = sum((i - xm) * (y[i] - ym) for i in range(n))
+              b = sxy / sxx
+              syy = sum((v - ym) ** 2 for v in y)
+              r2 = (sxy * sxy) / (sxx * syy) if syy > 0 else 0.0
+              return b * 100.0, r2
+
+
+          def ozellikler(S):
+              """S: {'closes','highs','lows','volumes','dates'} -> her gun icin ozellik (60. bardan itibaren)"""
+              c, h, l = S["closes"], S["highs"], S["lows"]
+              v = S.get("volumes") or [1.0] * len(c)
+              n = len(c)
+              lc = [math.log(x) if x and x > 0 else None for x in c]
+              e21, e55, rsi = _ema(c, 21), _ema(c, 55), _rsi(c)
+              out = [None] * n
+              bbgs = []
+              for i in range(n):
+                  if i < 59 or None in lc[i - 59:i + 1] or e55[i] is None or rsi[i] is None:
+                      continue
+                  eg20, r2 = _egim(lc[i - 19:i + 1])
+                  eg60, _ = _egim(lc[i - 59:i + 1])
+                  w = c[i - 19:i + 1]
+                  m = sum(w) / 20.0
+                  sd = math.sqrt(sum((x - m) ** 2 for x in w) / 20.0)
+                  bbg = 4 * sd / m * 100 if m else 0.0
+                  bbgs.append(bbg)
+                  hi20, lo20 = max(h[i - 19:i + 1]), min(l[i - 19:i + 1])
+                  vm = sum(v[i - 19:i + 1]) / 20.0
+                  out[i] = {"eg20": eg20, "eg60": eg60, "r2": r2,
+                            "ema21": (c[i] / e21[i] - 1) * 100, "ema55": (c[i] / e55[i] - 1) * 100,
+                            "rsi": rsi[i], "bbg": bbg,
+                            "zirve20": (c[i] / hi20 - 1) * 100 if hi20 else 0.0,
+                            "dip20": (c[i] / lo20 - 1) * 100 if lo20 else 0.0,
+                            "r5": (c[i] / c[i - 5] - 1) * 100,
+                            "hacim": math.log(max(v[i], 1.0) / max(vm, 1.0)),
+                            "bbgYuzdelik": round(100.0 * sum(1 for x in bbgs if x < bbg) / len(bbgs)) if len(bbgs) >= 20 else None}
+              return out
+
+
+          def desen_adi(f):
+              if f is None:
+                  return None
+              hv = math.exp(f["hacim"])
+              if f["zirve20"] >= -0.3 and hv >= 1.5 and f["eg20"] > 0:
+                  return "hacimli zirve kirilimi"
+              if f["dip20"] <= 0.3 and hv >= 1.5 and f["eg20"] < 0:
+                  return "hacimli dip kirilimi"
+              if f["eg60"] < -0.05 and f["eg20"] > 0.12:
+                  return "dipten donus"
+              if f["eg60"] > 0.05 and f["eg20"] < -0.12:
+                  return "tepeden donus"
+              if f["eg20"] > 0.15 and f["eg60"] > 0.08 and f["r2"] > 0.6:
+                  return "yukselen trend kanali"
+              if f["eg20"] < -0.15 and f["eg60"] < -0.08 and f["r2"] > 0.6:
+                  return "dusen trend kanali"
+              if abs(f["eg20"]) < 0.1 and f.get("bbgYuzdelik") is not None and f["bbgYuzdelik"] < 25:
+                  return "yatay sikisma"
+              if f["eg20"] > 0.05:
+                  return "zayif yukselis"
+              if f["eg20"] < -0.05:
+                  return "zayif dusus"
+              return "yatay"
+
+
+          def havuz_kur(seriler, H=H_ILERI):
+              """butun hisse-gunler: ozellik + ileri yol (H gun)"""
+              havuz = []
+              oz = {}
+              for t, S in seriler.items():
+                  F = ozellikler(S)
+                  oz[t] = F
+                  c, d = S["closes"], S["dates"]
+                  for i, f in enumerate(F):
+                      if f is None:
+                          continue
+                      yol = None
+                      if i + H < len(c):
+                          yol = [round((c[i + k] / c[i] - 1) * 100, 3) for k in range(1, H + 1)]
+                      havuz.append({"t": t, "i": i, "tarih": d[i], "son": d[i + H] if yol else None,
+                                    "f": f, "yol": yol, "desen": desen_adi(f)})
+              return havuz, oz
+
+
+          def olcek(havuz):
+              sd = {}
+              for k in OZ:
+                  xs = [p["f"][k] for p in havuz]
+                  m = sum(xs) / len(xs)
+                  sd[k] = math.sqrt(sum((x - m) ** 2 for x in xs) / len(xs)) or 1.0
+              return sd
+
+
+          def _yuzdelik(v, q):
+              s = sorted(v)
+              i = (len(s) - 1) * q
+              a, b = int(math.floor(i)), int(math.ceil(i))
+              return s[a] if a == b else s[a] + (s[b] - s[a]) * (i - a)
+
+
+          def projeksiyon(f, havuz, sd, karar_tarihi, K=K_ANALOG, H=H_ILERI, haric=None):
+              """karar_tarihi: bu tarihe kadar SONUCU belli olan analoglar kullanilir"""
+              aday = [p for p in havuz if p["yol"] is not None and p["son"] <= karar_tarihi
+                      and not (haric and p["t"] == haric[0] and p["tarih"] == haric[1])]
+              if len(aday) < K * 3:
+                  return None
+              def uz(p):
+                  return math.sqrt(sum(AGIRLIK[k] * ((p["f"][k] - f[k]) / sd[k]) ** 2 for k in OZ))
+              aday.sort(key=uz)
+              yak = aday[:K]
+              yol = {}
+              for q, ad in ((0.25, "p25"), (0.5, "p50"), (0.75, "p75")):
+                  yol[ad] = [round(_yuzdelik([p["yol"][h] for p in yak], q), 2) for h in range(H)]
+              son = [p["yol"][H - 1] for p in yak]
+              taban = [p["yol"][H - 1] for p in aday]
+              ds = desen_adi(f)
+              ayni = [p["yol"][H - 1] for p in aday if p["desen"] == ds]
+              return {"yol": yol, "yukariPay": round(100.0 * sum(1 for x in son if x > 0) / len(son)),
+                      "ortanca": round(_yuzdelik(son, 0.5), 2), "n": len(yak), "havuz": len(aday),
+                      "taban": {"ortanca": round(_yuzdelik(taban, 0.5), 2),
+                                "yukariPay": round(100.0 * sum(1 for x in taban if x > 0) / len(taban))},
+                      "desenTaban": ({"n": len(ayni), "ortanca": round(_yuzdelik(ayni, 0.5), 2),
+                                      "yukariPay": round(100.0 * sum(1 for x in ayni if x > 0) / len(ayni))}
+                                     if len(ayni) >= 20 else None),
+                      "analoglar": [{"t": p["t"], "tarih": p["tarih"], "desen": p["desen"],
+                                     "sonuc": p["yol"][H - 1]} for p in yak[:6]]}
+
+
+          def ozet_oz(f):
+              return {"eg20": round(f["eg20"], 3), "eg60": round(f["eg60"], 3), "r2": round(f["r2"], 2),
+                      "ema21": round(f["ema21"], 2), "ema55": round(f["ema55"], 2), "rsi": round(f["rsi"], 1),
+                      "bbg": round(f["bbg"], 2), "bbgYuzdelik": f.get("bbgYuzdelik"),
+                      "zirve20": round(f["zirve20"], 2), "dip20": round(f["dip20"], 2), "r5": round(f["r5"], 2),
+                      "hacim": round(math.exp(f["hacim"]), 2)}
+
+
+          def simulasyon(seriler, havuz, sd, oz, hisseler, gun_sayisi, H=H_ILERI, hz=None):
+              """son gun_sayisi karar gunu: her biri icin yalnizca o gune kadar bilinenle projeksiyon,
+              sonra gerceklesenle karsilastirma"""
+              kayit = []
+              for t in hisseler:
+                  S = seriler.get(t)
+                  if not S:
+                      continue
+                  d, c = S["dates"], S["closes"]
+                  son_i = len(c) - 1 - H
+                  for i in range(son_i - gun_sayisi + 1, son_i + 1):
+                      f = oz[t][i]
+                      if f is None:
+                          continue
+                      pr = projeksiyon_hizli(f, hz, d[i]) if hz else projeksiyon(f, havuz, sd, d[i], haric=(t, d[i]))
+                      if not pr:
+                          continue
+                      gercek = round((c[i + H] / c[i] - 1) * 100, 2)
+                      yol_g = [round((c[i + k] / c[i] - 1) * 100, 2) for k in range(1, H + 1)]
+                      kayit.append({"t": t, "tarih": d[i], "desen": desen_adi(f), "fiyat": c[i],
+                                    "p25": pr["yol"]["p25"][H - 1], "p50": pr["yol"]["p50"][H - 1],
+                                    "p75": pr["yol"]["p75"][H - 1], "yukariPay": pr["yukariPay"],
+                                    "tabanYukari": pr["taban"]["yukariPay"], "gercek": gercek,
+                                    "gercekYol": yol_g, "projYol": pr["yol"]["p50"]})
+              return kayit
+
+
+          def sim_ozet(kayit):
+              if not kayit:
+                  return None
+              n = len(kayit)
+              yon = sum(1 for k in kayit if (k["p50"] > 0) == (k["gercek"] > 0) and k["p50"] != 0)
+              bant = sum(1 for k in kayit if k["p25"] <= k["gercek"] <= k["p75"])
+              br = sum((k["yukariPay"] / 100.0 - (1 if k["gercek"] > 0 else 0)) ** 2 for k in kayit) / n
+              brt = sum((k["tabanYukari"] / 100.0 - (1 if k["gercek"] > 0 else 0)) ** 2 for k in kayit) / n
+              yuk = [k for k in kayit if k["yukariPay"] >= 60]
+              asg = [k for k in kayit if k["yukariPay"] <= 40]
+              ort = lambda a: round(sum(x["gercek"] for x in a) / len(a), 2) if a else None
+              return {"n": n, "yonIsabet": round(100.0 * yon / n), "bantKapsama": round(100.0 * bant / n),
+                      "brier": round(br, 3), "brierTaban": round(brt, 3),
+                      "gercekYukari": round(100.0 * sum(1 for k in kayit if k["gercek"] > 0) / n),
+                      "yukariDenen": {"n": len(yuk), "ortGercek": ort(yuk)},
+                      "asagiDenen": {"n": len(asg), "ortGercek": ort(asg)},
+                      "ortHata": round(sum(abs(k["p50"] - k["gercek"]) for k in kayit) / n, 2)}
+
+
+          def gunluk_cikti(seriler, H=H_ILERI, sim_gun=15, sim_hisse=None):
+              """depoya yazilacak tek dosya: bugunun desenleri, projeksiyonlar ve simulasyon"""
+              import statistics as st
+              from collections import defaultdict
+              havuz, oz = havuz_kur(seriler, H)
+              sd = olcek(havuz)
+              try:
+                  hz = hizli_kur(havuz, sd)
+              except Exception:
+                  hz = None
+              son_tarih = max(S["dates"][-1] for S in seriler.values())
+              his = {}
+              for t, S in seriler.items():
+                  F = oz[t]
+                  f = F[-1] if F else None
+                  if f is None or S["dates"][-1] != son_tarih:
+                      continue
+                  pr = projeksiyon_hizli(f, hz, son_tarih) if hz else projeksiyon(f, havuz, sd, son_tarih)
+                  if not pr:
+                      continue
+                  pr.update({"desen": desen_adi(f), "ozellik": ozet_oz(f), "fiyat": S["closes"][-1]})
+                  his[t] = pr
+              kayit = simulasyon(seriler, havuz, sd, oz, sorted(seriler), sim_gun, H, hz)
+              gun = defaultdict(list)
+              for k in kayit:
+                  gun[k["tarih"]].append(k)
+
+              def rank(a):
+                  o = sorted(range(len(a)), key=lambda i: a[i])
+                  r = [0] * len(a)
+                  for j, i in enumerate(o):
+                      r[i] = j
+                  return r
+              gunler, ics, alt, ust = [], [], [], []
+              for d, a in sorted(gun.items()):
+                  p, r = [x["p50"] for x in a], [x["gercek"] for x in a]
+                  m = len(a)
+                  if m < 10:
+                      continue
+                  rp, rr = rank(p), rank(r)
+                  ic = 1 - 6 * sum((rp[i] - rr[i]) ** 2 for i in range(m)) / (m * (m * m - 1))
+                  med = st.median(r)
+                  s = sorted(a, key=lambda x: x["p50"])
+                  q = max(1, m // 5)
+                  u = st.mean(x["gercek"] for x in s[-q:]) - med
+                  al = st.mean(x["gercek"] for x in s[:q]) - med
+                  ics.append(ic); ust.append(u); alt.append(al)
+                  o = sim_ozet(a)
+                  gunler.append({"tarih": d, "piyasaOrtanca": round(med, 2), "yonIsabet": o["yonIsabet"],
+                                 "gercekYukari": o["gercekYukari"],
+                                 "tahminYukari": round(sum(x["yukariPay"] for x in a) / m),
+                                 "ic": round(ic, 2), "ustBeslik": round(u, 2), "altBeslik": round(al, 2)})
+              dg = defaultdict(list)
+              for k in kayit:
+                  dg[k["desen"]].append(k)
+              desenler = []
+              for ds, a in sorted(dg.items(), key=lambda x: -len(x[1])):
+                  o = sim_ozet(a)
+                  desenler.append({"desen": ds, "n": o["n"], "yonIsabet": o["yonIsabet"],
+                                   "gercekYukari": o["gercekYukari"], "brier": o["brier"], "brierTaban": o["brierTaban"]})
+              ornek = [k for k in kayit if k["t"] in (sim_hisse or [])]
+              return {"asof": son_tarih, "ufuk": H, "k": K_ANALOG, "havuz": len(havuz),
+                      "hisseler": his,
+                      "simulasyon": {"gunSayisi": sim_gun, "ozet": sim_ozet(kayit),
+                                     "goreli": {"ortIc": round(st.mean(ics), 3) if ics else None,
+                                                "ustBeslikFazla": round(st.mean(ust), 2) if ust else None,
+                                                "altBeslikFazla": round(st.mean(alt), 2) if alt else None},
+                                     "gunler": gunler, "desenler": desenler, "ornek": ornek}}
+
+
+          # ---------- numpy ile hizli yol (is akisinda iki yillik havuz icin) ----------
+          def hizli_kur(havuz, sd):
+              import numpy as np
+              tam = [p for p in havuz if p["yol"] is not None]
+              w = np.array([math.sqrt(AGIRLIK[k]) / sd[k] for k in OZ])
+              X = np.array([[p["f"][k] for k in OZ] for p in tam]) * w
+              son = np.array([int(p["son"].replace("-", "")) for p in tam])
+              Y = np.array([p["yol"] for p in tam])
+              return {"np": np, "w": w, "X": X, "son": son, "Y": Y, "p": tam}
+
+
+          def projeksiyon_hizli(f, hz, karar_tarihi, K=K_ANALOG, H=H_ILERI):
+              np = hz["np"]
+              m = hz["son"] <= int(karar_tarihi.replace("-", ""))
+              idx = np.nonzero(m)[0]
+              if len(idx) < K * 3:
+                  return None
+              q = np.array([f[k] for k in OZ]) * hz["w"]
+              dist = ((hz["X"][idx] - q) ** 2).sum(axis=1)
+              sec = idx[np.argsort(dist, kind="stable")[:K]]
+              Yk = hz["Y"][sec]
+              yol = {}
+              for qq, ad in ((0.25, "p25"), (0.5, "p50"), (0.75, "p75")):
+                  yol[ad] = [round(_yuzdelik([float(x) for x in Yk[:, h]], qq), 2) for h in range(H)]
+              son = [float(x) for x in Yk[:, H - 1]]
+              taban = [float(x) for x in hz["Y"][idx, H - 1]]
+              ds = desen_adi(f)
+              ayni = [hz["p"][i]["yol"][H - 1] for i in idx if hz["p"][i]["desen"] == ds]
+              yak = [hz["p"][i] for i in sec]
+              return {"yol": yol, "yukariPay": round(100.0 * sum(1 for x in son if x > 0) / len(son)),
+                      "ortanca": round(_yuzdelik(son, 0.5), 2), "n": len(yak), "havuz": int(len(idx)),
+                      "taban": {"ortanca": round(_yuzdelik(taban, 0.5), 2),
+                                "yukariPay": round(100.0 * sum(1 for x in taban if x > 0) / len(taban))},
+                      "desenTaban": ({"n": len(ayni), "ortanca": round(_yuzdelik(ayni, 0.5), 2),
+                                      "yukariPay": round(100.0 * sum(1 for x in ayni if x > 0) / len(ayni))}
+                                     if len(ayni) >= 20 else None),
+                      "analoglar": [{"t": p["t"], "tarih": p["tarih"], "desen": p["desen"],
+                                     "sonuc": p["yol"][H - 1]} for p in yak[:6]]}
+
           def main():
               ts = tickers()
               if not ts:
@@ -466,6 +816,35 @@ jobs:
                   print("  %s: n=%d, 10g ortanca %+0.2f%%, pozitif %d%%"
                         % (k, v["n"], v["g10"]["ortanca"], v["g10"]["pozitifPay"]))
 
+              # ---- desenler, analog projeksiyonu ve gecmise donuk simulasyon ----
+              try:
+                  t0 = time.time()
+                  seriler = {}
+                  for t, bars in hist.items():
+                      if len(bars) < 80:
+                          continue
+                      seriler[t] = {"dates": [b["d"] for b in bars], "closes": [b["c"] for b in bars],
+                                    "highs": [b["h"] for b in bars], "lows": [b["l"] for b in bars],
+                                    "volumes": [b["v"] for b in bars]}
+                  out = gunluk_cikti(seriler, sim_gun=20,
+                                     sim_hisse=["THYAO", "AKBNK", "ASELS", "PGSUS", "EREGL", "TUPRS"])
+                  out.update({"generatedAt": now,
+                              "kaynak": "iki yillik gunluk seri, %d hisse" % len(seriler)})
+                  with open("data/desen.json", "w", encoding="utf-8") as fh:
+                      json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
+                  so = out["simulasyon"]["ozet"] or {}
+                  gr = out["simulasyon"]["goreli"]
+                  from collections import Counter
+                  print("desenler: %d hisse, havuz %d hisse-gun, %.1f sn"
+                        % (len(out["hisseler"]), out["havuz"], time.time() - t0))
+                  print("  bugunku desen dagilimi: " + ", ".join("%s %d" % kv for kv in
+                        Counter(v["desen"] for v in out["hisseler"].values()).most_common()))
+                  print("  simulasyon (%d gun): yon isabeti %%%s, bant kapsama %%%s, brier %s (taban %s), IC %s"
+                        % (out["simulasyon"]["gunSayisi"], so.get("yonIsabet"), so.get("bantKapsama"),
+                           so.get("brier"), so.get("brierTaban"), gr.get("ortIc")))
+              except Exception as e:
+                  print("desen hesaplanamadi: %s" % str(e)[:200])
+
 
           main()
 
@@ -479,7 +858,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "degisiklik yok"
           else
-            git commit -m "analitik: haftalik, endeks, taban oranlari"
+            git commit -m "analitik: haftalik, endeks, taban oranlari, desenler"
             git pull --rebase --autostash || true
             git push
           fi
