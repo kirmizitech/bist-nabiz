@@ -167,6 +167,43 @@ jobs:
               sel.sort(key=lambda x: (abs(x["level"] - price) / max(price, 1e-9)) - 0.004 * x["touches"])
               return sel[:n]
 
+          # ---- uzun gecmis (firsat radarinin kurulum istatistigi icin) ----
+          # Seviyeler eskisi gibi son ~2 yildan hesaplanir; 5 yillik seri ayrica data/uzun altina yazilir.
+          # Disk ve depo buyumesini sinirlamak icin uzun seri yalnizca cuma gunleri ya da dosya yoksa yazilir.
+          os.makedirs("data/uzun", exist_ok=True)
+          UZUN_YAZ = datetime.now(timezone.utc).weekday() == 4 or os.environ.get("UZUN_YAZ") == "1"
+
+          def uzun_duzelt(bars):
+              """BIST'te gunluk fiyat limiti %10'dur; kapanistan kapanisa %20'den buyuk kopus kurumsal
+              islemdir (bedelsiz, bolunme). Oncesi o oranla carpilarak seri birlestirilir."""
+              n = 0
+              for i in range(len(bars) - 2, -1, -1):
+                  prev, cur = bars[i]["c"], bars[i + 1]["c"]
+                  if prev <= 0:
+                      continue
+                  r = cur / prev
+                  if r < 0.8 or r > 1.25:
+                      for j in range(i + 1):
+                          for k in ("c", "o", "h", "l"):
+                              bars[j][k] *= r
+                      n += 1
+              return n
+
+          def uzun_yaz(t, bars_tum):
+              yol = "data/uzun/%s.json" % t
+              if not (UZUN_YAZ or not os.path.exists(yol)):
+                  return
+              u = [dict(b) for b in bars_tum]
+              n = uzun_duzelt(u)
+              with open(yol, "w", encoding="utf-8") as fh:
+                  json.dump({"ticker": t, "asof": u[-1]["d"], "duzeltme": n,
+                             "dates": [b["d"] for b in u],
+                             "closes": [round(b["c"], 3) for b in u],
+                             "opens": [round(b["o"], 3) for b in u],
+                             "highs": [round(b["h"], 3) for b in u],
+                             "lows": [round(b["l"], 3) for b in u],
+                             "volumes": [int(b["v"]) for b in u]}, fh, ensure_ascii=False, separators=(",", ":"))
+
           TICKERS = tickers()
           print("hisse sayisi:", len(TICKERS))
           out, sigs, failed = {}, [], []
@@ -174,7 +211,15 @@ jobs:
 
           for t in TICKERS:
               try:
-                  bars = fetch(t)
+                  try:
+                      bars_tum = fetch(t, "5y")
+                  except Exception:
+                      bars_tum = fetch(t, "2y")
+                  try:
+                      uzun_yaz(t, bars_tum)
+                  except Exception as _e:
+                      print("uzun seri yazilamadi %s: %s" % (t, str(_e)[:80]))
+                  bars = [dict(b) for b in bars_tum[-504:]]
                   adjusted = back_adjust(bars)
                   cl = [b["c"] for b in bars]
                   vol = [b["v"] for b in bars]

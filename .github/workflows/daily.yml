@@ -150,6 +150,19 @@ jobs:
           # Endeksten cikmis ama istersen takip edebilecegin isimler, EKSTRA listesine ekle:
           # BALSU, BSOKE, DAPGM, DSTKF, EFOR, ESEN, EUPWR, GENIL, GESAN, GRTHO, GSRAY, IEYHO, IZENR, KLRHO, KTLEV, KUYAS, MAGEN, MIATK, ODINE, PASEU, PATEK, PSGYO, QUAGR, RALYH, REEDR, SARKY, SKBNK
           EKSTRA = []
+          # data/ek_liste.txt: BIST 100 disinda takip etmek istedigin kodlar, her satira bir kod (# ile baslayan satir yorum)
+          try:
+              with open("data/ek_liste.txt", encoding="utf-8") as _fh:
+                  for _satir in _fh:
+                      _k = _satir.split("#")[0].strip().upper()
+                      if _re.fullmatch(r"[A-Z0-9]{3,6}", _k) and _k not in EKSTRA:
+                          EKSTRA.append(_k)
+              if EKSTRA:
+                  print("ek liste (BIST 100 disi): " + ", ".join(EKSTRA))
+          except FileNotFoundError:
+              pass
+          except Exception as _e:
+              print("ek liste okunamadi: %s" % str(_e)[:120])
           for _x in EKSTRA:
               if _x not in BIST100:
                   BIST100.append(_x)
