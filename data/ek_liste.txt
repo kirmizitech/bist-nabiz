@@ -1,0 +1,3 @@
+# BIST 100 disinda takip etmek istedigin hisseler. Her satira bir kod.
+# '#' ile baslayan satirlar yorumdur.
+PARSN
