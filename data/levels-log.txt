@@ -3,7 +3,7 @@ OK   AEFES     16.04  direnc 16.33,16.72,17.17  destek 15.49,14.99,14.59
 OK   AGHOL     25.00  direnc 26.56,27.05,27.94  destek 24.61,24.0  MACD histogrami eksiye dondu
 OK   AHGAZ     43.80  direnc 48.0,49.06  destek 41.72,40.66,36.56  SMA50 asagi kesisim
 OK   AKBNK     65.15  direnc 67.2,69.51,71.65  destek 64.73,62.22,60.61  MACD histogrami eksiye dondu
-OK   AKCNS    173.00  direnc 174.0,178.0,183.0  destek 170.65,167.0,159.7  MACD histogrami eksiye dondu
+OK   AKCNS    173.00  direnc 173.3,178.0,183.0  destek 170.65,167.0,159.7  MACD histogrami eksiye dondu
 OK   AKFYE      2.77  direnc 2.78,2.83,2.94  destek 2.75,2.63,2.54  
 OK   AKSA      10.65  direnc 10.78,11.0,11.26  destek 10.52,10.06,10.34  
 OK   AKSEN     63.80  direnc 64.1,73.45,75.65  destek 62.75,61.15,58.7  MACD histogrami eksiye dondu
@@ -89,7 +89,7 @@ OK   TRENJ     71.05  direnc 72.55,78.2,81.33  destek 69.73,66.37,58.32
 OK   TRGYO     84.70  direnc 86.58,89.25,92.02  destek 84.05,81.25,76.68  hacim 20 gun ortalamasinin 2.7 kati
 OK   TRMET    105.30  direnc 107.4,114.6,117.9  destek 104.8,101.55,93.25  
 OK   TSKB       9.89  direnc 11.02,11.36,11.75  destek 9.61,8.16  SMA50 asagi kesisim
-OK   TTKOM     47.48  direnc 47.74,51.25,52.15  destek 47.37,45.51,44.37  
+OK   TTKOM     47.48  direnc 47.65,51.25,52.15  destek 47.37,45.51,44.37  
 OK   TTRAK    326.00  direnc 380.75,420.5,446.75  destek 324.75  
 OK   TUKAS      1.84  direnc 2.05,2.15,2.21  destek 1.81,1.73,1.6  
 OK   TUPRS    322.75  direnc 364.5,397.5,407.5  destek 283.0,251.5,240.2  20 gunluk kanalin altina indi; MACD histogrami eksiye dondu
@@ -99,7 +99,7 @@ OK   VAKBN     33.00  direnc 33.67,34.48,35.44  destek 32.13,31.06,30.44  SMA200
 OK   VESTL     13.00  direnc 14.2,23.06,25.96  destek 10.54  
 OK   YKBNK     36.16  direnc 36.77,37.71,39.13  destek 35.81,34.82,33.21  SMA200 asagi kesisim
 OK   ZOREN      1.38  direnc 2.67,2.78,2.93  destek 1.05  
-arsiv: 41 yeni sinyal satiri, 100 yeni fiyat satiri
+arsiv: 0 yeni sinyal satiri, 0 yeni fiyat satiri
 
 kapanis 2026-11-20 | 100 hisse | 41 ham sinyal | 11 teyitli | 0 basarisiz
 piyasa geneli sayilan turler: 20 gunluk kanalin altina indi, MACD histogrami eksiye dondu
