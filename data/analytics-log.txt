@@ -2,17 +2,17 @@ CVKMD: bolunme duzeltmesi uygulandi
 EUREN: bolunme duzeltmesi uygulandi
 FENER: bolunme duzeltmesi uygulandi
 TUKAS: bolunme duzeltmesi uygulandi
-veri alinan: 100 / 100
-haftalik seri yazilan: 100
-endeks yazildi: 502 bar, 100 hisse icin goreli guc
-endeksten en guclu 5: THYAO +28.9, PGSUS +25.9, TCKRC +22.6, BTCIM +18.9, ENERY +17.7
-endeksten en zayif 5: TURSG -27.8, AKFYE -25.3, SOKM -24.1, GUBRF -19.4, PETKM -16.5
-taban oranlari: 67 hucre, genel 10 gun ortanca -0.55, pozitif pay 47%
-  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2445, 10g ortanca -0.46%, pozitif 46%
-  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2052, 10g ortanca -1.19%, pozitif 43%
-  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1565, 10g ortanca +0.09%, pozitif 50%
-  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1450, 10g ortanca -0.76%, pozitif 46%
-  rsi30-45|karisik|normal|hacim<1: n=1182, 10g ortanca -0.08%, pozitif 49%
-desenler: 100 hisse, havuz 44107 hisse-gun, 35.1 sn
-  bugunku desen dagilimi: dipten donus 52, zayif dusus 18, yatay 10, zayif yukselis 10, yatay sikisma 5, dusen trend kanali 3, yukselen trend kanali 2
-  simulasyon (20 gun): yon isabeti %49, bant kapsama %33, brier 0.28 (taban 0.251), IC 0.087
+veri alinan: 101 / 101
+haftalik seri yazilan: 101
+endeks yazildi: 500 bar, 101 hisse icin goreli guc
+endeksten en guclu 5: THYAO +26.2, PGSUS +22.8, CWENE +22.5, TCKRC +20.8, ENERY +20.1
+endeksten en zayif 5: AKFYE -29.6, TURSG -28.3, SOKM -27.6, PETKM -17.1, HEKTS -15.8
+taban oranlari: 67 hucre, genel 10 gun ortanca -0.49, pozitif pay 47%
+  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2471, 10g ortanca -0.43%, pozitif 46%
+  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2021, 10g ortanca -1.18%, pozitif 43%
+  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1550, 10g ortanca +0.21%, pozitif 50%
+  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1420, 10g ortanca -0.65%, pozitif 46%
+  rsi30-45|karisik|normal|hacim<1: n=1186, 10g ortanca -0.12%, pozitif 49%
+desenler: 101 hisse, havuz 44355 hisse-gun, 47.5 sn
+  bugunku desen dagilimi: dipten donus 45, zayif dusus 28, zayif yukselis 14, yatay 5, yatay sikisma 4, dusen trend kanali 3, tepeden donus 1, yukselen trend kanali 1
+  simulasyon (20 gun): yon isabeti %49, bant kapsama %35, brier 0.278 (taban 0.252), IC 0.084
