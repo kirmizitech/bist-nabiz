@@ -1,4 +1,4 @@
 seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-23 11:25, ortanca gun -0.0%, kapsam 100
-en cok artan: BRSAN +2.92%, CWENE +2.75%, ALARK +2.53%, HALKB +2.28%, TRENJ +1.62%
-en cok dusen: FENER -4.35%, PGSUS -3.00%, ZOREN -2.90%, PAHOL -2.60%, BINHO -2.37%
+intraday.json yazildi: 2026-11-23 12:50, ortanca gun -0.31%, kapsam 100
+en cok artan: BRSAN +3.81%, CWENE +2.93%, HALKB +2.38%, TOASO +2.33%, YKBNK +1.99%
+en cok dusen: FENER -4.83%, PAHOL -3.90%, TURSG -3.41%, TCKRC -3.25%, BINHO -3.16%
