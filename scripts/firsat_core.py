@@ -1,0 +1,945 @@
+"""Firsat radari: kisa vadeli (10-20 islem gunu) takip adaylari ve takip defteri.
+
+Yalnizca depodaki fiyat serilerini kullanir; ag erisimi yoktur. Her gun:
+ 1. Kurulumlari (setup) depodaki butun gecmiste (data/uzun varsa ~5 yil, yoksa ~6 ay) sinar: her kurulum olustugunda 10 ve 20 gun
+    sonra hisse, esit agirlikli BIST 100 evreninden ne kadar iyi ya da kotu gitti.
+ 2. Gecmiste kendini kanitlamis kurulumlari bugun tasiyan hisseleri siralar (en fazla 5).
+ 3. Her adayi deftere yazar ve 20 islem gunu boyunca izler; karneyi cikarir.
+Gecmise donuk (walk-forward) doldurulan kayitlar yalnizca o gunun verisini kullanir ve
+"gerideDonuk": true olarak isaretlenir.
+
+Bu bir tarama ve olcum aracidir; yatirim tavsiyesi degildir.
+"""
+import json, math, os, statistics as st
+
+H1, H2 = 10, 20
+EN_AZ_BAR = 60
+SURUM = "3"            # defterin gecmise donuk kismi bu surum degisince yeniden kurulur
+KUME = set()           # karsilastirma evreni: BIST 100 uyeleri (ek liste haric)
+_EV = {}               # evren getirisi onbellegi
+
+# ---------------------------------------------------------------- yardimcilar
+
+_CS = {}
+
+
+def _kum(a):
+    v = _CS.get(id(a))
+    if v is None or v[0] is not a or len(v[1]) != len(a) + 1:
+        acc = [0.0]
+        for x in a:
+            acc.append(acc[-1] + x)
+        v = (a, acc)
+        _CS[id(a)] = v
+    return v[1]
+
+
+def sma(a, n, i):
+    if i - n + 1 < 0 or i >= len(a):
+        return None
+    cs = _kum(a)
+    return (cs[i + 1] - cs[i - n + 1]) / n
+
+
+def rsi(c, i, n=14):
+    if i - n < 0:
+        return None
+    g = l = 0.0
+    for k in range(i - n + 1, i + 1):
+        d = c[k] - c[k - 1]
+        if d > 0:
+            g += d
+        else:
+            l -= d
+    return 100.0 if l == 0 else 100 - 100 / (1 + g / l)
+
+
+def ort(a):
+    return sum(a) / len(a) if a else None
+
+
+def yuzdelik(a, q):
+    if not a:
+        return None
+    s = sorted(a)
+    k = (len(s) - 1) * q
+    f = int(math.floor(k)); c = min(f + 1, len(s) - 1)
+    return s[f] + (s[c] - s[f]) * (k - f)
+
+
+def r2(x, d=2):
+    return None if x is None else round(x, d)
+
+
+# ---------------------------------------------------------------- kurulumlar
+# Her kurulum (seri, i) -> bool. Yalnizca i ve oncesine bakar.
+
+def k_trend_geri(s, i):
+    c, l = s["closes"], s["lows"]
+    s20, s50, s50p = sma(c, 20, i), sma(c, 50, i), sma(c, 50, i - 5)
+    if None in (s20, s50, s50p):
+        return False
+    return c[i] > s50 and s50 > s50p and l[i] <= s20 * 1.01 and c[i] > s20 and c[i] > c[i - 1]
+
+
+def k_kisa_ort(s, i):
+    c = s["closes"]
+    if i < 14:
+        return False
+    a = all(c[i] > sma(c, n, i) for n in (5, 8, 13))
+    b = all(c[i - 1] <= sma(c, n, i - 1) for n in (5, 8, 13))
+    return a and b
+
+
+def k_kisa_ort_50(s, i):
+    c = s["closes"]
+    s50 = sma(c, 50, i)
+    return s50 is not None and k_kisa_ort(s, i) and c[i] > s50
+
+
+def k_kirilim(s, i):
+    h, c, v = s["highs"], s["closes"], s["volumes"]
+    if i < 21:
+        return False
+    va = sma(v, 20, i - 1) or 0
+    return c[i] > max(h[i - 20:i]) and va > 0 and v[i] > 1.5 * va
+
+
+def k_altin(s, i):
+    c = s["closes"]
+    a, b, a1, b1 = sma(c, 20, i), sma(c, 50, i), sma(c, 20, i - 1), sma(c, 50, i - 1)
+    return None not in (a, b, a1, b1) and a > b and a1 <= b1
+
+
+def k_rsi30(s, i):
+    c = s["closes"]
+    a, b = rsi(c, i), rsi(c, i - 1)
+    return a is not None and b is not None and a > 30 and b <= 30
+
+
+def k_hacimli(s, i):
+    c, v, o = s["closes"], s["volumes"], s["opens"]
+    if i < 21:
+        return False
+    va = sma(v, 20, i - 1) or 0
+    return va > 0 and v[i] > 2 * va and c[i] > o[i] and c[i] / c[i - 1] > 1.03
+
+
+def k_trend_dizilim(s, i):
+    c = s["closes"]
+    a, b, a5 = sma(c, 20, i), sma(c, 50, i), sma(c, 20, i - 5)
+    return None not in (a, b, a5) and c[i] > a > b and a > a5
+
+
+KURULUMLAR = [
+    ("trend_geri", k_trend_geri, "Trend içi geri çekilme",
+     "50 günlük ortalaması yükselen hisse 20 günlük ortalamaya kadar geri çekildi ve günü onun üstünde, artıda kapattı."),
+    ("kisa_ort", k_kisa_ort, "Kısa ortalamaları geri alma",
+     "Fiyat bir gün önce altında kaldığı 5, 8 ve 13 günlük ortalamaların üçünün de üstüne çıktı."),
+    ("kisa_ort_50", k_kisa_ort_50, "Kısa ortalamaları geri alma (50 günlük üstünde)",
+     "Kısa ortalamaları geri alma, fiyat 50 günlük ortalamanın da üstündeyken."),
+    ("kirilim", k_kirilim, "Hacimli 20 gün zirvesi kırılımı",
+     "Kapanış son 20 günün en yükseğini aştı, hacim 20 gün ortalamasının 1,5 katından fazla."),
+    ("altin", k_altin, "Altın kesişim (20/50)",
+     "20 günlük ortalama 50 günlüğü yukarı kesti."),
+    ("rsi30", k_rsi30, "RSI 30'dan dönüş",
+     "RSI(14) aşırı satım bölgesinden 30'un üstüne çıktı."),
+    ("hacimli", k_hacimli, "Hacimli sert yükseliş",
+     "Günü %3'ten fazla artıda, hacim 20 gün ortalamasının 2 katından fazla kapattı."),
+    ("trend_dizilim", k_trend_dizilim, "Trend dizilimi",
+     "Fiyat > 20 günlük > 50 günlük ortalama ve 20 günlük yükseliyor."),
+]
+KUR = {k[0]: k for k in KURULUMLAR}
+
+# ---------------------------------------------------------------- veri
+
+
+def duzelt(s):
+    """BIST'te gunluk fiyat limiti %10: kapanistan kapanisa %20'den buyuk kopus kurumsal islemdir
+    (bedelsiz, bolunme). Oncesindeki fiyatlar o oranla carpilir. Dondurulen: duzeltme sayisi."""
+    c = s["closes"]
+    n = 0
+    for i in range(len(c) - 2, -1, -1):
+        if c[i] <= 0:
+            continue
+        r = c[i + 1] / c[i]
+        if r < 0.8 or r > 1.25:
+            for k in ("closes", "opens", "highs", "lows"):
+                a = s[k]
+                for j in range(i + 1):
+                    a[j] = a[j] * r
+            n += 1
+    return n
+
+
+def birlestir(u, s):
+    """uzun seri (data/uzun) + son 130 gunluk seri: ortak ilk gune gore olceklenip birlestirilir."""
+    d0 = s["dates"][0]
+    ud = u.get("dates") or []
+    if not ud or ud[0] >= d0:
+        return s
+    j = next((k for k, d in enumerate(ud) if d >= d0), len(ud))
+    oran = 1.0
+    if j < len(ud) and ud[j] == d0 and u["closes"][j] > 0:
+        oran = s["closes"][0] / u["closes"][j]
+    out = {"ticker": s.get("ticker"), "asof": s.get("asof")}
+    for k in ("dates", "closes", "opens", "highs", "lows", "volumes"):
+        onc = (u.get(k) or [])[:j]
+        if k in ("closes", "opens", "highs", "lows"):
+            onc = [x * oran for x in onc]
+        out[k] = onc + list(s.get(k) or [])
+    return out
+
+
+def ek_liste(kok):
+    p = os.path.join(kok, "data/ek_liste.txt")
+    out = []
+    if os.path.exists(p):
+        for satir in open(p, encoding="utf-8"):
+            k = satir.split("#")[0].strip().upper()
+            if 3 <= len(k) <= 6 and k.isalnum() and k not in out:
+                out.append(k)
+    return out
+
+
+def yukle(kok):
+    global KUME
+    uni = json.load(open(os.path.join(kok, "data/universe.json"), encoding="utf-8"))
+    lv = json.load(open(os.path.join(kok, "data/levels.json"), encoding="utf-8"))
+    KUME = set(uni.get("bist100", []))
+    _EV.clear()
+    S = {}
+    uzun_var = 0
+    for t in list(uni.get("bist100", [])) + [x for x in ek_liste(kok) if x not in KUME]:
+        p = os.path.join(kok, "data/series", t + ".json")
+        if not os.path.exists(p):
+            continue
+        s = json.load(open(p, encoding="utf-8"))
+        c = s.get("closes") or []
+        if len(c) < EN_AZ_BAR or not s.get("highs") or not s.get("lows"):
+            continue
+        L = (lv.get("tickers") or {}).get(t) or {}
+        if L.get("suspect"):
+            continue
+        s.setdefault("opens", c); s.setdefault("volumes", [0] * len(c))
+        pu = os.path.join(kok, "data/uzun", t + ".json")
+        if os.path.exists(pu):
+            try:
+                s = birlestir(json.load(open(pu, encoding="utf-8")), s)
+                uzun_var += 1
+            except Exception:
+                pass
+        s["duzeltme"] = duzelt(s)
+        S[t] = s
+    W = {}
+    for t in S:
+        p = os.path.join(kok, "data/weekly", t + ".json")
+        if os.path.exists(p):
+            W[t] = json.load(open(p, encoding="utf-8"))
+    yukle.uzun = uzun_var
+    return uni, lv, S, W
+
+
+def ortak_takvim(S):
+    """Tarih -> her hisse icin indeks. Seriler ayni gunleri tasir ama bosluk olabilir."""
+    tak = sorted({d for s in S.values() for d in s["dates"]})
+    idx = {t: {d: i for i, d in enumerate(s["dates"])} for t, s in S.items()}
+    return tak, idx
+
+
+def evren_getirisi(S, idx, tarih, H):
+    """tarih kapanisindan H bar sonrasina esit agirlikli BIST 100 getirisi (%)."""
+    anah = (tarih, H)
+    if anah in _EV:
+        return _EV[anah]
+    r = []
+    for t, s in S.items():
+        if KUME and t not in KUME:
+            continue
+        i = idx[t].get(tarih)
+        if i is None or i + H >= len(s["closes"]):
+            continue
+        r.append(s["closes"][i + H] / s["closes"][i] - 1)
+    v = ort(r) * 100 if len(r) >= 30 else None
+    _EV[anah] = v
+    return v
+
+
+def ew_endeks(S, idx, tak):
+    """esit agirlikli BIST 100 endeksi (gunluk) ve her gun icin rejim: endeks 50 gunluk ortalamasinin
+    ustundeyse 'yukselis', altindaysa 'dusus'. Yalnizca o gune kadarki veriye bakar."""
+    sev = [100.0]
+    for j in range(1, len(tak)):
+        r = []
+        for t, s in S.items():
+            if KUME and t not in KUME:
+                continue
+            i = idx[t].get(tak[j]); i0 = idx[t].get(tak[j - 1])
+            if i is not None and i0 is not None and s["closes"][i0] > 0:
+                r.append(s["closes"][i] / s["closes"][i0] - 1)
+        sev.append(sev[-1] * (1 + (ort(r) or 0)))
+    rej = {}
+    for j, d in enumerate(tak):
+        m = sma(sev, 50, j)
+        rej[d] = None if m is None else ("yukselis" if sev[j] > m else "dusus")
+    return sev, rej
+
+
+# ---------------------------------------------------------------- kurulum istatistigi
+
+
+def kurulum_olaylari(S, idx, tak, rej=None):
+    """Her kurulumun butun gecmis olaylari. Her olay sonucun hangi tarihte bilindigini (s10, s20)
+    tasir; gecmise donuk sinamada 'olaylar_kadar' ile yalnizca o gun bilinenler kullanilir."""
+    olay = {k: [] for k in KUR}
+    for t, s in S.items():
+        c, d = s["closes"], s["dates"]
+        son = len(c) - 1
+        for i in range(50, son + 1):
+            for k, fn, _, _ in KURULUMLAR:
+                try:
+                    if not fn(s, i):
+                        continue
+                except Exception:
+                    continue
+                e = {"tarih": d[i], "kod": t, "f10": None, "f20": None, "g20": None, "s10": None, "s20": None,
+                     "rejim": (rej or {}).get(d[i])}
+                if i + H1 <= son:
+                    ev = evren_getirisi(S, idx, d[i], H1)
+                    if ev is not None:
+                        e["f10"] = (c[i + H1] / c[i] - 1) * 100 - ev
+                        e["s10"] = d[i + H1]
+                if i + H2 <= son:
+                    ev = evren_getirisi(S, idx, d[i], H2)
+                    if ev is not None:
+                        e["g20"] = (c[i + H2] / c[i] - 1) * 100
+                        e["f20"] = e["g20"] - ev
+                        e["s20"] = d[i + H2]
+                olay[k].append(e)
+    for k in olay:
+        olay[k].sort(key=lambda e: e["tarih"])
+    return olay
+
+
+def olaylar_kadar(olay, d):
+    """d gunu itibariyla bilinen olaylar: olay tarihi <= d, sonucu d'den sonra belli olanin sonucu yok."""
+    out = {}
+    for k, L in olay.items():
+        r = []
+        for e in L:
+            if e["tarih"] > d:
+                break
+            if (e["s20"] and e["s20"] > d) or (e["s10"] and e["s10"] > d):
+                e = dict(e)
+                if e["s10"] and e["s10"] > d:
+                    e["f10"] = None
+                if e["s20"] and e["s20"] > d:
+                    e["f20"] = None; e["g20"] = None
+            r.append(e)
+        out[k] = r
+    return out
+
+
+def ozetle(olaylar, rejimli=True):
+    o = {"n": len(olaylar)}
+    if rejimli:
+        o["rejim"] = {r: ozetle([e for e in olaylar if e.get("rejim") == r], False)["h20"]
+                      for r in ("yukselis", "dusus")}
+    for H, a in ((H1, "f10"), (H2, "f20")):
+        x = [e[a] for e in olaylar if e[a] is not None]
+        if len(x) < 8:
+            o["h%d" % H] = None
+            continue
+        byd = {}
+        for e in olaylar:
+            if e[a] is not None:
+                byd.setdefault(e["tarih"], []).append(e[a])
+        dm = [ort(v) for v in byd.values()]
+        sd = st.pstdev(dm) if len(dm) > 2 else 0
+        tt = (ort(dm) / (sd / math.sqrt(len(dm)))) if sd > 0 else 0.0
+        srt = sorted([e for e in olaylar if e[a] is not None], key=lambda e: e["tarih"])
+        h = len(srt) // 2
+        o["h%d" % H] = {
+            "n": len(x), "gun": len(byd), "ort": r2(ort(x)), "ortanca": r2(yuzdelik(x, 0.5)),
+            "p25": r2(yuzdelik(x, 0.25)), "p75": r2(yuzdelik(x, 0.75)),
+            "poz": round(sum(1 for v in x if v > 0) / len(x) * 100),
+            "t": r2(tt), "ilkYari": r2(ort([e[a] for e in srt[:h]])), "sonYari": r2(ort([e[a] for e in srt[h:]])),
+        }
+    return o
+
+
+def kanit(h):
+    """Kurulumun gecmisteki kaniti: aday secmeye uygun mu ve gucu."""
+    if not h or h["n"] < 40 or h["ort"] is None:
+        return "yetersiz", False
+    tutarli = (h["ilkYari"] or 0) > 0 and (h["sonYari"] or 0) > 0
+    uygun = h["ort"] >= 0.5 and h["poz"] >= 55 and (h["t"] >= 1 or tutarli)
+    if not uygun:
+        return ("ters" if h["ort"] < -0.5 else "zayif"), False
+    guc = "guclu" if (h["t"] >= 2 and tutarli) else "orta" if (h["t"] >= 1 or tutarli) else "zayif"
+    return guc, True
+
+
+# ---------------------------------------------------------------- seviyeler
+
+
+def seviyeler(s, i, L):
+    c, h, l = s["closes"], s["highs"], s["lows"]
+    p = c[i]
+    atr = L.get("atr14") if L else None
+    if not atr:
+        tr = [max(h[k] - l[k], abs(h[k] - c[k - 1]), abs(l[k] - c[k - 1])) for k in range(max(1, i - 13), i + 1)]
+        atr = ort(tr) or p * 0.03
+    dir_ = sorted([x["level"] for x in (L or {}).get("resistances", []) if x["level"] > p * 1.01])
+    zirve20 = max(h[max(0, i - 19):i + 1])
+    zirve60 = max(h[max(0, i - 59):i + 1])
+    aday = dir_ + [v for v in (zirve20, zirve60) if v > p * 1.01]
+    aday = sorted(set(round(v, 2) for v in aday))
+    hedef1 = aday[0] if aday else round(p + 2 * atr, 2)
+    hedef2 = aday[1] if len(aday) > 1 else round(max(hedef1, p) + 2 * atr, 2)
+    des = sorted([x["level"] for x in (L or {}).get("supports", []) if x["level"] < p - 0.5 * atr], reverse=True)
+    dip10 = min(l[max(0, i - 9):i + 1])
+    bozan = des[0] if des else dip10
+    if bozan >= p - 0.5 * atr:
+        bozan = dip10
+    if bozan >= p:
+        bozan = p - 1.5 * atr
+    bozan = round(bozan, 2)
+    pot = (hedef1 / p - 1) * 100
+    risk = (1 - bozan / p) * 100
+    return {"hedef1": hedef1, "hedef2": hedef2, "bozan": bozan, "potansiyel": r2(pot, 1),
+            "risk": r2(risk, 1), "oran": r2(pot / risk, 2) if risk > 0 else None, "atr": r2(atr)}
+
+
+# ---------------------------------------------------------------- aday secimi
+
+
+def kanit_rejim(oz, rejim):
+    """Bugunku piyasa rejiminde yeterli ornek varsa kanit o rejimin sonuclarindan, yoksa butun
+    gecmisten okunur. Dondurulen: (guc, uygun, dayanak, h)"""
+    g0, u0 = kanit(oz["h20"])
+    hr = (oz.get("rejim") or {}).get(rejim) if rejim else None
+    # rejime bolmek ornegi yariya indirir: yalnizca rejimde en az 100 ornek varsa ve kurulum genelde
+    # ters calismiyorsa rejim sonucuna gecilir
+    if hr and hr["n"] >= 100 and g0 != "ters":
+        g, u = kanit(hr)
+        return g, u, rejim, hr
+    return g0, u0, "tum", oz["h20"]
+
+
+def adaylar(S, idx, tak, olay, tarih, lv, en_cok=5, rejim=None, canli=False):
+    """tarih gunu icin adaylar. olay: o tarihe kadar bilinen olaylar. canli=False iken (gecmise donuk)
+    levels.json'daki bugunku destek-direncler kullanilmaz; seviyeler yalnizca o gunku fiyattan kurulur."""
+    ozet = {k: ozetle(v) for k, v in olay.items()}
+    kn = {k: kanit_rejim(ozet[k], rejim) for k in ozet}
+    durum = {k: (kn[k][0], kn[k][1]) for k in ozet}
+    out = []
+    for t, s in S.items():
+        i = idx[t].get(tarih)
+        if i is None or i < 50:
+            continue
+        tuttu = []
+        for k, fn, ad, acik in KURULUMLAR:
+            try:
+                if fn(s, i):
+                    tuttu.append(k)
+            except Exception:
+                pass
+        uygun = [k for k in tuttu if durum[k][1]]
+        if not uygun:
+            continue
+        beklenen = 0.0
+        for k in uygun:
+            h = kn[k][3]
+            beklenen += h["ort"] * h["n"] / (h["n"] + 60.0)   # az ornekli kurulumu kucult
+        ters = [k for k in tuttu if durum[k][0] == "ters"]
+        beklenen -= 0.5 * len(ters)
+        L = ((lv.get("tickers") or {}).get(t) or {}) if canli else {}
+        sv = seviyeler(s, i, L)
+        if sv["risk"] is not None and sv["risk"] > 15:     # okumayi bozan seviye cok uzaksa alma
+            continue
+        out.append({"kod": t, "skor": r2(beklenen, 3), "kurulumlar": uygun, "uyarilar": ters,
+                    "tumKurulumlar": tuttu, "fiyat": r2(s["closes"][i]), "seviye": sv,
+                    "bist100": t in KUME, "dayanak": {k: kn[k][2] for k in uygun}})
+    out.sort(key=lambda a: (-a["skor"], -(a["seviye"]["oran"] or 0)))
+    return out[:en_cok], ozet, durum
+
+
+def benzer_gecmis(olay, kod, kurulumlar, tarih, n=4):
+    """Ayni hissede ayni kurulumun gecmis ornekleri ve sonuclari."""
+    r = []
+    for k in kurulumlar:
+        for e in olay.get(k, []):
+            if e["kod"] == kod and e["tarih"] < tarih and e["f20"] is not None:
+                r.append({"kurulum": k, "tarih": e["tarih"], "fazla20": r2(e["f20"]), "getiri20": r2(e["g20"])})
+    r.sort(key=lambda x: x["tarih"], reverse=True)
+    return r[:n]
+
+
+# ---------------------------------------------------------------- piyasa ve yaklasanlar
+
+
+def piyasa(S, idx, tak):
+    """Esit agirlikli evren endeksi ve genislik: adaylarin mutlak sonucunu piyasa belirler."""
+    sev = [100.0]
+    for j in range(1, len(tak)):
+        r = []
+        for t, s in S.items():
+            if KUME and t not in KUME:
+                continue
+            i = idx[t].get(tak[j]); i0 = idx[t].get(tak[j - 1])
+            if i is not None and i0 is not None:
+                r.append(s["closes"][i] / s["closes"][i0] - 1)
+        sev.append(sev[-1] * (1 + (ort(r) or 0)))
+    n = len(sev) - 1
+    s20, s50 = sma(sev, 20, n), sma(sev, 50, n)
+    KS = {t: s for t, s in S.items() if not KUME or t in KUME}
+    ust50 = sum(1 for t, s in KS.items() if sma(s["closes"], 50, len(s["closes"]) - 1) and
+                s["closes"][-1] > sma(s["closes"], 50, len(s["closes"]) - 1))
+    g20 = (sev[n] / sev[n - 20] - 1) * 100 if n >= 20 else None
+    if s20 and s50:
+        rejim = ("yukselis" if sev[n] > s20 > s50 else "dusus" if sev[n] < s20 < s50 else "karisik")
+    else:
+        rejim = "belirsiz"
+    return {"rejim": rejim, "ewSon20": r2(g20), "ust50Pay": round(ust50 / len(KS) * 100) if KS else None,
+            "ewUst20": sev[n] > s20 if s20 else None, "ewUst50": sev[n] > s50 if s50 else None,
+            "ew": [r2(x, 1) for x in sev[-60:]], "ewTarih": tak[-60:]}
+
+
+def yaklasanlar(S, idx, tarih, durum, lv, adaylar_, en_cok=6):
+    """Uygun kurulumlara bir adim kalan hisseler: tetiklenmeden once izlemeye deger."""
+    secili = {a["kod"] for a in adaylar_}
+    out = []
+    for t, s in S.items():
+        if t in secili:
+            continue
+        i = idx[t].get(tarih)
+        if i is None or i < 55:
+            continue
+        c = s["closes"]
+        s20, s50, s50p = sma(c, 20, i), sma(c, 50, i), sma(c, 50, i - 5)
+        if durum.get("trend_geri", ("", False))[1] and s50 > s50p and c[i] > s50 and s20:
+            m = (c[i] / s20 - 1) * 100
+            if 0 < m <= 3:
+                out.append({"kod": t, "kurulum": "trend_geri", "fiyat": c[i], "mesafe": r2(m, 1),
+                            "esik": r2(s20 * 1.01), "not": "yükselen trendde 20 günlük ortalamaya %%%s mesafede" % str(r2(m, 1)).replace(".", ",")})
+                continue
+        if durum.get("kisa_ort", ("", False))[1] and i >= 14:
+            ks = [sma(c, n, i) for n in (5, 8, 13)]
+            if all(c[i] <= k for k in ks):
+                m = (max(ks) / c[i] - 1) * 100
+                if m <= 1.5:
+                    out.append({"kod": t, "kurulum": "kisa_ort", "fiyat": c[i], "mesafe": r2(m, 1),
+                                "esik": r2(max(ks)), "not": "5/8/13 günlük ortalamaların en yükseğine %%%s mesafede" % str(r2(m, 1)).replace(".", ",")})
+    out.sort(key=lambda x: x["mesafe"])
+    return out[:en_cok]
+
+
+def desen_ekle(kok, adaylar_):
+    p = os.path.join(kok, "data/desen.json")
+    if not os.path.exists(p):
+        return False
+    try:
+        d = json.load(open(p, encoding="utf-8"))
+    except Exception:
+        return False
+    for a in adaylar_:
+        h = (d.get("hisseler") or {}).get(a["kod"])
+        if not h:
+            continue
+        a["analog"] = {"desen": h.get("desen"), "n": h.get("n"), "yukariPay": h.get("yukariPay"),
+                       "ortanca": h.get("ortanca"), "taban": (h.get("taban") or {}).get("ortanca"),
+                       "ornekler": (h.get("analoglar") or [])[:4], "ufuk": d.get("ufuk")}
+    return True
+
+
+# ---------------------------------------------------------------- defter
+
+
+def defter_coz(S, idx, defter):
+    for e in defter:
+        s = S.get(e["kod"])
+        if not s:
+            continue
+        i = idx[e["kod"]].get(e["tarih"])
+        if i is None:
+            continue
+        c, h, l = s["closes"], s["highs"], s["lows"]
+        son = min(len(c) - 1, i + H2)
+        gun = son - i
+        e["gun"] = gun
+        if gun <= 0:
+            e["durum"] = "izleniyor"
+            continue
+        e["getiri"] = r2((c[son] / c[i] - 1) * 100)
+        ev = evren_getirisi(S, idx, e["tarih"], gun) if gun > 0 else None
+        e["fazla"] = r2(e["getiri"] - ev) if ev is not None else None
+        e["mfe"] = r2((max(h[i + 1:son + 1]) / c[i] - 1) * 100)
+        e["mae"] = r2((min(l[i + 1:son + 1]) / c[i] - 1) * 100)
+        ilk = None
+        for k in range(i + 1, son + 1):
+            hh = h[k] >= e["seviye"]["hedef1"]; bb = l[k] <= e["seviye"]["bozan"]
+            if hh and bb:
+                ilk = "ayni_gun"; break
+            if hh:
+                ilk = "hedef"; break
+            if bb:
+                ilk = "bozan"; break
+        e["ilkDokunan"] = ilk
+        for H in (H1, H2):
+            if i + H <= len(c) - 1:
+                g = (c[i + H] / c[i] - 1) * 100
+                evh = evren_getirisi(S, idx, e["tarih"], H)
+                e["g%d" % H] = r2(g)
+                e["f%d" % H] = r2(g - evh) if evh is not None else None
+        e["durum"] = "tamamlandi" if gun >= H2 else "izleniyor"
+    return defter
+
+
+def karne(defter):
+    def grup(a):
+        t = [e for e in a if e.get("f20") is not None]
+        t10 = [e for e in a if e.get("f10") is not None]
+        if not t10:
+            return {"n10": 0, "n20": 0}
+        o = {"n10": len(t10), "ort10": r2(ort([e["f10"] for e in t10])),
+             "poz10": round(sum(1 for e in t10 if e["f10"] > 0) / len(t10) * 100),
+             "n20": len(t)}
+        if t:
+            o.update({"ort20": r2(ort([e["f20"] for e in t])), "ortanca20": r2(yuzdelik([e["f20"] for e in t], 0.5)),
+                      "poz20": round(sum(1 for e in t if e["f20"] > 0) / len(t) * 100),
+                      "mutlak20": r2(ort([e["g20"] for e in t])),
+                      "hedefOnce": round(sum(1 for e in t if e.get("ilkDokunan") == "hedef") / len(t) * 100),
+                      "bozanOnce": round(sum(1 for e in t if e.get("ilkDokunan") == "bozan") / len(t) * 100)})
+        return o
+    o = {"tum": grup(defter),
+         "canli": grup([e for e in defter if not e.get("gerideDonuk")]),
+         "gerideDonuk": grup([e for e in defter if e.get("gerideDonuk")]),
+         "kurulum": {}}
+    for k in KUR:
+        a = [e for e in defter if k in e.get("kurulumlar", [])]
+        if a:
+            o["kurulum"][k] = grup(a)
+    return o
+
+
+def oto_takip(defter, S, tak, yakin=10):
+    """Takip listesine otomatik girecek isimler: 20 gunluk izleme suresi dolmamis, okumayi bozan seviyeye
+    once dokunmamis ve fiyati hala o seviyenin ustunde olan adaylar. Gecmise donuk bulunanlardan yalnizca
+    son 'yakin' islem gunu icinde cikanlar alinir."""
+    tpos = {d: j for j, d in enumerate(tak)}
+    son = len(tak) - 1
+    out = {}
+    for e in defter:
+        if e.get("durum") != "izleniyor" or e.get("ilkDokunan") == "bozan" or e["kod"] not in S:
+            continue
+        if S[e["kod"]]["closes"][-1] <= e["seviye"]["bozan"]:
+            continue
+        j = tpos.get(e["tarih"])
+        if j is None or (e.get("gerideDonuk") and son - j > yakin):
+            continue
+        kalan = H2 - (son - j)
+        if e["kod"] not in out or out[e["kod"]]["tarih"] < e["tarih"]:
+            out[e["kod"]] = {"kod": e["kod"], "tarih": e["tarih"], "kalanGun": kalan,
+                             "kurulumlar": e.get("kurulumlar", []), "bozan": e["seviye"]["bozan"],
+                             "hedef1": e["seviye"]["hedef1"], "gerideDonuk": bool(e.get("gerideDonuk"))}
+    return sorted(out.values(), key=lambda x: x["tarih"], reverse=True)
+
+
+# ---------------------------------------------------------------- ana akis
+
+
+def secenekler(S, adaylar_, oto, defter, ozet, durum, yak, piy, kr):
+    """Kullanicinin secim yapacagi alternatifler: ayni aday havuzu farkli olcutlerle siralanir.
+    Her secenegin arti ve eksisi olculmus veriyle yazilir. Secim kullanicinindir."""
+    havuz = []
+    def kanit_of(kurs):
+        en = None
+        for k in kurs:
+            h = (ozet.get(k) or {}).get("h20")
+            if h and (en is None or (h.get("t") or 0) > (en[1].get("t") or 0)):
+                en = (k, h)
+        return en
+    def ekle(kod, kurs, hedef1, hedef2, bozan, kaynak, giris=None):
+        s = S.get(kod)
+        if not s:
+            return
+        p = s["closes"][-1]
+        h = hedef1 if hedef1 > p * 1.005 else (hedef2 if hedef2 and hedef2 > p * 1.005 else None)
+        if h is None or bozan >= p:
+            return
+        pot = (h / p - 1) * 100
+        risk = (1 - bozan / p) * 100
+        kn = kanit_of(kurs)
+        e = {"kod": kod, "fiyat": r2(p), "kurulumlar": kurs, "hedef": r2(h), "bozan": r2(bozan),
+             "potansiyel": r2(pot, 1), "risk": r2(risk, 1), "oran": r2(pot / risk, 2) if risk > 0 else None,
+             "kaynak": kaynak}
+        if kn:
+            e["kanit"] = {"kurulum": kn[0], "n": kn[1]["n"], "ort": kn[1]["ort"], "poz": kn[1]["poz"], "t": kn[1]["t"]}
+        if giris:
+            e["giris"] = giris
+        havuz.append(e)
+    for a in adaylar_:
+        ekle(a["kod"], a["kurulumlar"], a["seviye"]["hedef1"], a["seviye"]["hedef2"], a["seviye"]["bozan"], "bugun")
+    gor = {a["kod"] for a in adaylar_}
+    for o in oto:
+        if o["kod"] in gor:
+            continue
+        e2 = next((e for e in defter if e["kod"] == o["kod"] and e["tarih"] == o["tarih"]), None)
+        h2 = e2["seviye"].get("hedef2") if e2 else None
+        ekle(o["kod"], o["kurulumlar"], o["hedef1"], h2, o["bozan"], "izlemede",
+             {"tarih": o["tarih"], "getiri": e2.get("getiri") if e2 else None, "fazla": e2.get("fazla") if e2 else None,
+              "kalanGun": o["kalanGun"]})
+    out = []
+    tm = (kr or {}).get("tum") or {}
+    kullanilan = set()
+
+    def sec(lst, n=2):
+        """secenekler birbirinin tekrari olmasin: once kullanilmamis isimler; hic yoksa en iyisi"""
+        yeni = [e for e in lst if e["kod"] not in kullanilan][:n]
+        if not yeni:
+            yeni = lst[:1]
+        for e in yeni:
+            kullanilan.add(e["kod"])
+        return yeni
+    kanitli = sorted([e for e in havuz if e.get("kanit")], key=lambda e: (-(e["kanit"]["t"] or 0), -(e["kanit"]["poz"] or 0)))
+    if kanitli:
+        out.append({"k": "kanit", "ad": "Kanıtı en güçlü kurulum",
+                    "arti": "Geçmişte en tutarlı çalışmış kurulumu taşıyan isimler.",
+                    "eksi": "Seviyelere göre en iyi potansiyel/risk oranını sunmayabilir.",
+                    "isimler": sec(kanitli)})
+    orn = sorted([e for e in havuz if e["potansiyel"] >= 2 and e["risk"] >= 1.5 and e["oran"]], key=lambda e: -e["oran"])
+    if orn:
+        out.append({"k": "oran", "ad": "Potansiyel / risk oranı en iyi",
+                    "arti": "İlk hedef bölgesine uzaklık, okumayı bozan seviyeye uzaklığın en çok katı.",
+                    "eksi": ("Oranı yüksek yapan çoğu zaman yakın bir bozan seviyedir; defterde adayların %%%s'i önce bozan "
+                             "seviyeyi gördü." % tm.get("bozanOnce")) if tm.get("n20") else "Yakın bozan seviye erken bozulabilir.",
+                    "isimler": sec(orn)})
+    dar = sorted([e for e in havuz if e["risk"] >= 1.5 and e["potansiyel"] >= 2], key=lambda e: e["risk"])
+    if dar:
+        out.append({"k": "dar", "ad": "Okumayı bozan seviyeye en yakın",
+                    "arti": "Okuma yanlış çıkarsa fiyatın bozan seviyeye kadar gideceği yol en kısa.",
+                    "eksi": "Seviye yakın olduğu için olağan dalgalanma bile okumayı bozabilir.",
+                    "isimler": sec(dar)})
+    if yak:
+        out.append({"k": "erken", "ad": "Henüz tetiklenmemiş, bir adım kalan",
+                    "arti": "Kurulum oluşursa ilk günden izlenir.",
+                    "eksi": "Kurulum henüz oluşmadı; oluşmazsa aday olmaz. Bunlar için geçmiş istatistik geçerli değil.",
+                    "isimler": [{"kod": y["kod"], "fiyat": y["fiyat"], "kurulumlar": [y["kurulum"]], "not": y["not"],
+                                 "kaynak": "yaklasan"} for y in yak[:3]]})
+    bek = {"k": "bekle", "ad": "Hiçbirini izlemeye almamak, piyasa zeminini beklemek",
+           "arti": "Piyasa rejimi %s; hisselerin %%%s'i 50 günlük ortalamasının üstünde." % (piy.get("rejim"), piy.get("ust50Pay")),
+           "eksi": "Rejim dönerse ilk hareketi kaçırabilirsin.", "isimler": []}
+    if tm.get("n20"):
+        bek["arti"] += " Defterde 20 günü dolan %d adayın ortalama mutlak getirisi %%%s oldu (BIST 100'e göre %s puan)." % (
+            tm["n20"], str(tm.get("mutlak20")), str(tm.get("ort20")))
+    out.append(bek)
+    return out
+
+
+def calistir(kok, defter_yolu=None, geriye_gun=None, en_cok=5):
+    uni, lv, S, W = yukle(kok)
+    tak, idx = ortak_takvim(S)
+    bugun = tak[-1]
+    uzun = getattr(yukle, "uzun", 0) >= 30
+    if geriye_gun is None:
+        geriye_gun = 250 if uzun else 40           # uzun veri varsa yaklasik bir yillik gecmise donuk sinama
+    sev, rej = ew_endeks(S, idx, tak)
+    defter_yolu = defter_yolu or os.path.join(kok, "data/firsat_defter.json")
+    eski, meta = [], {}
+    if os.path.exists(defter_yolu):
+        try:
+            meta = json.load(open(defter_yolu, encoding="utf-8"))
+            eski = meta.get("kayitlar", [])
+        except Exception:
+            eski, meta = [], {}
+    # surum degistiyse ya da uzun veri yeni geldiyse gecmise donuk kisim yeniden kurulur; canli kayitlar korunur
+    yeniden = meta.get("surum") != SURUM or (uzun and not meta.get("uzunVeri"))
+    if yeniden:
+        eski = [e for e in eski if not e.get("gerideDonuk")]
+    kayitli = {(e["tarih"], e["kod"]) for e in eski}
+    tpos = {d: j for j, d in enumerate(tak)}
+
+    def izlemede(kod, d):
+        """kod, d gununden onceki H2 islem gunu icinde zaten deftere girdiyse ikinci kez yazma"""
+        j = tpos.get(d)
+        for e in eski:
+            if e["kod"] == kod and e["tarih"] < d and j is not None and tpos.get(e["tarih"]) is not None \
+                    and j - tpos[e["tarih"]] < H2:
+                return True
+        return False
+
+    olay = kurulum_olaylari(S, idx, tak, rej)
+    # gecmise donuk doldurma: son 'geriye_gun' gunun her biri icin yalnizca o gun bilinen sonuclarla
+    if yeniden and geriye_gun:
+        canli_gun = {e["tarih"] for e in eski}
+        for d in tak[-(geriye_gun + 1):-1]:
+            if d in canli_gun:
+                continue
+            ad, _, _ = adaylar(S, idx, tak, olaylar_kadar(olay, d), d, lv, en_cok, rejim=rej.get(d), canli=False)
+            for a in ad:
+                if (d, a["kod"]) in kayitli or izlemede(a["kod"], d):
+                    continue
+                eski.append({"tarih": d, "kod": a["kod"], "kurulumlar": a["kurulumlar"], "fiyat": a["fiyat"],
+                             "seviye": a["seviye"], "skor": a["skor"], "gerideDonuk": True})
+                kayitli.add((d, a["kod"]))
+
+    ad, ozet, durum = adaylar(S, idx, tak, olay, bugun, lv, en_cok, rejim=rej.get(bugun), canli=True)
+    for a in ad:
+        a["benzer"] = benzer_gecmis(olay, a["kod"], a["kurulumlar"], bugun)
+        w = W.get(a["kod"])
+        if w and len(w.get("closes", [])) >= 20:
+            wc = w["closes"]
+            s20 = sum(wc[-20:]) / 20
+            a["haftalik"] = {"ort20h": r2(s20), "ustunde": wc[-1] > s20,
+                             "egim": "yukari" if s20 > sum(wc[-24:-4]) / 20 else "asagi"}
+        a["zatenIzlemede"] = izlemede(a["kod"], bugun)
+        if (bugun, a["kod"]) not in kayitli and not a["zatenIzlemede"]:
+            eski.append({"tarih": bugun, "kod": a["kod"], "kurulumlar": a["kurulumlar"], "fiyat": a["fiyat"],
+                         "seviye": a["seviye"], "skor": a["skor"], "gerideDonuk": False})
+    eski.sort(key=lambda e: (e["tarih"], e["kod"]))
+    eski = eski[-2500:]
+    defter_coz(S, idx, eski)
+    kr = karne(eski)
+
+    # takipten cikanlar: 20 gunu dolanlar (bugun tamamlananlar)
+    acik = [e for e in eski if e.get("durum") == "izleniyor" and not e.get("gerideDonuk")]
+    biten_bugun = [e["kod"] for e in eski if e.get("durum") == "tamamlandi" and e.get("gun") == H2
+                   and not e.get("gerideDonuk")]
+    piy = piyasa(S, idx, tak)
+    yak = yaklasanlar(S, idx, bugun, durum, lv, ad)
+    desen_ekle(kok, ad)
+    tamam = [e for e in eski if e.get("f20") is not None]
+    if tamam:
+        kr["rejimNotu"] = ("Defterde 20 gunu dolan %d adayin ortalama mutlak getirisi %%%s, ayni donemde evrenin "
+                           "ortalamasina gore fazla getirisi %s puan." % (len(tamam), str(r2(ort([e["g20"] for e in tamam]), 1)),
+                                                                     str(r2(ort([e["f20"] for e in tamam]), 1))))
+    kurulum_tablo = []
+    for k, fn, adi, acik_ in KURULUMLAR:
+        kr_ = kanit_rejim(ozet[k], rej.get(bugun))
+        kurulum_tablo.append({"k": k, "ad": adi, "aciklama": acik_, "kanit": durum[k][0], "uygun": durum[k][1],
+                              "dayanak": kr_[2], "ozet": ozet[k]})
+    # karne de rejime gore: ayni adaylar yukselis ve dusus donemlerinde ne yapti
+    kr["rejim"] = {r: karne([e for e in eski if rej.get(e["tarih"]) == r])["tum"] for r in ("yukselis", "dusus")}
+    sonuc = {
+        "asof": bugun, "ufuk": [H1, H2], "evren": len(S), "uzunVeri": uzun,
+        "rejimBugun": rej.get(bugun),
+        "duzeltmeler": {t: s_["duzeltme"] for t, s_ in S.items() if s_.get("duzeltme")},
+        "veriAraligi": [tak[0], tak[-1]],
+        "adaylar": ad, "yaklasanlar": yak, "piyasa": piy, "kurulumlar": kurulum_tablo,
+        "izlenen": [e for e in eski if e.get("durum") == "izleniyor"],
+        "gecerli": sorted({e["kod"] for e in eski if e.get("durum") == "izleniyor" and e.get("ilkDokunan") != "bozan"
+                    and e["kod"] in S and S[e["kod"]]["closes"][-1] > e["seviye"]["bozan"]}),
+        "takiptenCikan": biten_bugun,
+        "otoTakip": oto_takip(eski, S, tak),
+        "secenekler": secenekler(S, ad, oto_takip(eski, S, tak), eski, ozet, durum, yak, piy, kr),
+        "karne": kr,
+        "yontem": ("Her kurulum verideki %d islem gununde BIST 100'de olustugu her seferde 10 ve 20 islem gunu "
+                   "sonrasiyla olculur; getiri, ayni donemde esit agirlikli BIST 100 evreninin getirisinden "
+                   "arindirilir (fazla getiri). Aday secmeye uygun kurulum: en az 40 ornek, 20 gunluk ortalama fazla "
+                   "getiri en az +0,5 puan, orneklerin en az %%55'inde evrenden iyi, ve ya tarih kumelenmesine "
+                   "gore t >= 1 ya da donemin iki yarisinda da arti. Bugunku rejimde (esit agirlikli BIST 100 50 "
+                   "gunluk ortalamasinin ustu ya da alti) en az 100 ornek varsa kanit o rejimin sonuclarindan okunur. "
+                   "Defter her adayi 20 islem gunu izler. Sinirlar: evren bugunku BIST 100 listesidir (gecmiste "
+                   "endeksten cikan zayif hisseler yok, sonuclar biraz iyimser); komisyon ve alis-satis farki dahil "
+                   "degildir (20 gunde yaklasik 0,2-0,4 puan)." % len(tak)),
+        "not": "Tarama ve olcum ciktisidir; yatirim tavsiyesi degildir. Gecmis sonuc gelecegi garanti etmez.",
+    }
+    defter = {"guncelleme": bugun, "surum": SURUM, "uzunVeri": uzun, "kayitlar": eski}
+    return sonuc, defter
+
+
+def seans(kok):
+    """Gun ortasi ara taramasi: seans ici fiyatla (yaklasik 15 dk gecikmeli) gecici bir bugun mumu kurar.
+    Deftere YAZMAZ; kurulumlar kapanista teyit edilmedikce aday sayilmaz. Izlemedeki adaylarin
+    okumayi bozan seviyeye ve ilk hedefe uzakligini verir."""
+    uni, lv, S, W = yukle(kok)
+    intr = json.load(open(os.path.join(kok, "data/intraday.json"), encoding="utf-8"))
+    F = json.load(open(os.path.join(kok, "data/firsat.json"), encoding="utf-8"))
+    rows = {r["ticker"]: r for r in intr.get("rows", []) if r.get("son")}
+    gun = intr.get("asof")
+    uygun = [x["k"] for x in F.get("kurulumlar", []) if x.get("uygun")]
+    on = []
+    for t, s_ in S.items():
+        r = rows.get(t)
+        if not r or not gun or gun <= s_["dates"][-1]:
+            continue
+        for k, v in (("dates", gun), ("closes", r["son"]), ("opens", r.get("acilis") or r["son"]),
+                     ("highs", r.get("yuksek") or r["son"]), ("lows", r.get("dusuk") or r["son"]),
+                     ("volumes", r.get("hacim") or 0)):
+            s_[k] = list(s_[k]) + [v]
+        i = len(s_["closes"]) - 1
+        tut = []
+        for k in uygun:
+            try:
+                if KUR[k][1](s_, i):
+                    tut.append(k)
+            except Exception:
+                pass
+        if tut:
+            L = (lv.get("tickers") or {}).get(t) or {}
+            sv = seviyeler(s_, i, L)
+            if sv["risk"] is not None and sv["risk"] <= 15:
+                on.append({"kod": t, "fiyat": r["son"], "gunDegisim": r.get("gunDegisim"), "kurulumlar": tut, "seviye": sv})
+    iz = []
+    for o in F.get("otoTakip", []):
+        r = rows.get(o["kod"])
+        if not r:
+            continue
+        p = r["son"]
+        bm = (p / o["bozan"] - 1) * 100 if o.get("bozan") else None
+        hm = (o["hedef1"] / p - 1) * 100 if o.get("hedef1") else None
+        if bm is not None and bm < 0:
+            dr = "okumayi bozan seviyenin altinda (kapanista teyit gerekir)"
+        elif hm is not None and hm <= 0:
+            dr = "ilk hedef bolgesinde"
+        elif bm is not None and bm < 1.5:
+            dr = "okumayi bozan seviyeye cok yakin"
+        elif hm is not None and hm < 1.5:
+            dr = "ilk hedefe cok yakin"
+        else:
+            dr = "seviyeler arasinda"
+        iz.append({"kod": o["kod"], "tarih": o["tarih"], "fiyat": p, "gunDegisim": r.get("gunDegisim"),
+                   "bozan": o.get("bozan"), "hedef1": o.get("hedef1"), "bozanaMesafe": r2(bm, 1),
+                   "hedefeMesafe": r2(hm, 1), "durum": dr})
+    iz.sort(key=lambda x: (x["bozanaMesafe"] if x["bozanaMesafe"] is not None else 99))
+    return {"asof": gun, "saat": intr.get("saat"), "gecikme": intr.get("gecikme"),
+            "ortancaDegisim": intr.get("ortancaDegisim"), "taramaAsof": F.get("asof"),
+            "adayOnu": on[:8], "izlemede": iz,
+            "not": "Seans ici ara tarama; kurulumlar kapanista teyit edilmedikce aday sayilmaz. Yatirim tavsiyesi degildir."}
+
+
+if __name__ == "__main__":
+    import sys
+    kok = sys.argv[1] if len(sys.argv) > 1 else "."
+    if len(sys.argv) > 2 and sys.argv[2] == "seans":
+        o = seans(kok)
+        json.dump(o, open(os.path.join(kok, "data/firsat_seans.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+        print("seans taramasi: %s %s, kapanista teyit bekleyen %d, izlemede %d" % (o["asof"], o["saat"], len(o["adayOnu"]), len(o["izlemede"])))
+        for x in o["izlemede"]:
+            print("  %-6s %s bozana %s%% hedefe %s%%" % (x["kod"], x["durum"], x["bozanaMesafe"], x["hedefeMesafe"]))
+        sys.exit(0)
+    s, d = calistir(kok)
+    os.makedirs(os.path.join(kok, "data"), exist_ok=True)
+    json.dump(s, open(os.path.join(kok, "data/firsat.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    json.dump(d, open(os.path.join(kok, "data/firsat_defter.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    print("firsat: %s, %d aday, defterde %d kayit (%d izleniyor)" % (
+        s["asof"], len(s["adaylar"]), len(d["kayitlar"]), len(s["izlenen"])))
+    for a in s["adaylar"]:
+        print("  %-6s skor %.2f %s hedef %s bozan %s pot %s%% risk %s%%" % (
+            a["kod"], a["skor"], ",".join(a["kurulumlar"]), a["seviye"]["hedef1"], a["seviye"]["bozan"],
+            a["seviye"]["potansiyel"], a["seviye"]["risk"]))
+    for k in s["kurulumlar"]:
+        h = k["ozet"]["h20"]
+        print("  [%s] %-14s %s | rejim: %s" % ("+" if k["uygun"] else " ", k["k"], h and "n%d ort%.2f poz%d t%.2f %s/%s" % (
+            h["n"], h["ort"], h["poz"], h["t"], h["ilkYari"], h["sonYari"]), {r: (v and (v["n"], v["ort"], v["poz"])) for r, v in (k["ozet"].get("rejim") or {}).items()}))
+    print("karne:", json.dumps(s["karne"]["tum"]))
+    print("rejim karnesi:", json.dumps(s["karne"].get("rejim")), "| bugun rejim:", s["rejimBugun"], "| uzun veri:", s["uzunVeri"])
+    print("piyasa:", {k: v for k, v in s["piyasa"].items() if k not in ("ew", "ewTarih")})
+    print("gecerli:", s["gecerli"])
+    for o in s["secenekler"]:
+        print("  secenek", o["k"], [(x["kod"], x.get("potansiyel"), x.get("risk"), x.get("oran")) for x in o["isimler"]])
+    print("otoTakip:", [(o["kod"], o["tarih"], o["kalanGun"]) for o in s["otoTakip"]])
+    print("yaklasanlar:", [(y["kod"], y["kurulum"], y["mesafe"]) for y in s["yaklasanlar"]])
+    for k, v in s["karne"]["kurulum"].items(): print("  karne", k, v)
+
