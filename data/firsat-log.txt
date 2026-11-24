@@ -1,15 +1,15 @@
-firsat: 2026-11-23, 0 aday, defterde 0 kayit (0 izleniyor)
+firsat: 2026-11-24, 0 aday, defterde 0 kayit (0 izleniyor)
   [ ] trend_geri     n6136 ort0.20 poz46 t1.78 0.21/0.19 | rejim: {'yukselis': (4764, 0.25, 45), 'dusus': (1372, 0.01, 49)}
   [ ] kisa_ort       n3280 ort0.18 poz46 t0.79 0.08/0.28 | rejim: {'yukselis': (2056, -0.01, 44), 'dusus': (1224, 0.5, 48)}
   [ ] kisa_ort_50    n1979 ort0.04 poz46 t1.30 -0.21/0.3 | rejim: {'yukselis': (1489, 0.08, 45), 'dusus': (490, -0.06, 48)}
   [ ] kirilim        n4027 ort-0.53 poz43 t-1.60 -0.92/-0.14 | rejim: {'yukselis': (3529, -0.02, 44), 'dusus': (498, -4.13, 36)}
-  [ ] altin          n1161 ort-0.17 poz44 t-0.76 0.04/-0.37 | rejim: {'yukselis': (872, 0.03, 43), 'dusus': (289, -0.77, 46)}
-  [ ] rsi30          n3148 ort0.14 poz45 t-0.07 0.31/-0.03 | rejim: {'yukselis': (1347, 0.03, 44), 'dusus': (1801, 0.22, 47)}
+  [ ] altin          n1163 ort-0.17 poz44 t-0.77 0.02/-0.36 | rejim: {'yukselis': (873, 0.02, 43), 'dusus': (290, -0.75, 46)}
+  [ ] rsi30          n3156 ort0.14 poz45 t-0.07 0.29/-0.01 | rejim: {'yukselis': (1347, 0.03, 44), 'dusus': (1809, 0.22, 47)}
   [ ] hacimli        n2896 ort-0.89 poz40 t-2.73 -1.24/-0.54 | rejim: {'yukselis': (2225, -0.36, 41), 'dusus': (671, -2.67, 37)}
-  [ ] trend_dizilim  n38751 ort0.07 poz45 t0.17 0.01/0.13 | rejim: {'yukselis': (34082, 0.19, 45), 'dusus': (4669, -0.84, 46)}
+  [ ] trend_dizilim  n38752 ort0.07 poz45 t0.19 0.01/0.13 | rejim: {'yukselis': (34082, 0.19, 45), 'dusus': (4670, -0.84, 46)}
 karne: {"n10": 0, "n20": 0}
 rejim karnesi: {"yukselis": {"n10": 0, "n20": 0}, "dusus": {"n10": 0, "n20": 0}} | bugun rejim: dusus | uzun veri: True
-piyasa: {'rejim': 'dusus', 'ewSon20': -0.41, 'ust50Pay': 12, 'ewUst20': False, 'ewUst50': False}
+piyasa: {'rejim': 'dusus', 'ewSon20': -1.65, 'ust50Pay': 9, 'ewUst20': False, 'ewUst50': False}
 gecerli: []
   secenek bekle []
 otoTakip: []
