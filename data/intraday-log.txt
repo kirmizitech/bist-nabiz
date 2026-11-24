@@ -1,4 +1,4 @@
-seans ici veri alinan: 100 / 100
-intraday.json yazildi: 2026-11-23 18:34, ortanca gun -0.4%, kapsam 100
-en cok artan: CWENE +7.90%, BRSAN +4.22%, GUBRF +3.07%, HALKB +2.69%, DOAS +2.43%
-en cok dusen: BTCIM -8.06%, FENER -5.31%, TRGYO -4.55%, PAHOL -3.90%, TCKRC -3.81%
+seans ici veri alinan: 101 / 101
+intraday.json yazildi: 2026-11-24 11:23, ortanca gun -0.13%, kapsam 101
+en cok artan: TUKAS +5.00%, GRSEL +4.44%, EGEEN +2.55%, TTRAK +1.90%, KATMR +1.83%
+en cok dusen: BINHO -3.00%, EGGUB -2.58%, TUPRS -2.16%, ULKER -2.12%, AYGAZ -1.97%
