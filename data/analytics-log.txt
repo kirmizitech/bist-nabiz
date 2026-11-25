@@ -13,6 +13,6 @@ taban oranlari: 67 hucre, genel 10 gun ortanca -0.49, pozitif pay 47%
   rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1550, 10g ortanca +0.21%, pozitif 50%
   rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1420, 10g ortanca -0.65%, pozitif 46%
   rsi30-45|karisik|normal|hacim<1: n=1186, 10g ortanca -0.12%, pozitif 49%
-desenler: 101 hisse, havuz 44355 hisse-gun, 47.5 sn
+desenler: 101 hisse, havuz 44355 hisse-gun, 41.4 sn
   bugunku desen dagilimi: dipten donus 45, zayif dusus 28, zayif yukselis 14, yatay 5, yatay sikisma 4, dusen trend kanali 3, tepeden donus 1, yukselen trend kanali 1
   simulasyon (20 gun): yon isabeti %49, bant kapsama %35, brier 0.278 (taban 0.252), IC 0.084
