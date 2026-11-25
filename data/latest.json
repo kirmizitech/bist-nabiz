@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T16:42:52+00:00",
+ "generatedAt": "2026-11-25T23:47:38+00:00",
  "asof": "2026-11-24",
  "asofSpread": null,
  "universe": "BIST 100 + 1 ek isim",
@@ -875,7 +875,7 @@
   {
    "price": 29.84,
    "asof": "2026-11-24",
-   "volume": 134235932,
+   "volume": 134735932,
    "change1d": -1.32,
    "change5d": -6.34,
    "change1m": -5.57,
@@ -1368,7 +1368,7 @@
   {
    "price": 32.3,
    "asof": "2026-11-24",
-   "volume": 3356256,
+   "volume": 3375681,
    "change1d": -0.43,
    "change5d": -10.18,
    "change1m": -7.82,
@@ -1412,7 +1412,7 @@
   {
    "price": 429.0,
    "asof": "2026-11-24",
-   "volume": 541776,
+   "volume": 541982,
    "change1d": -0.12,
    "change5d": -6.49,
    "change1m": 10.85,
@@ -1500,7 +1500,7 @@
   {
    "price": 18.31,
    "asof": "2026-11-24",
-   "volume": 3788630,
+   "volume": 3796730,
    "change1d": -0.6,
    "change5d": -6.1,
    "change1m": 0.27,
@@ -1632,7 +1632,7 @@
   {
    "price": 25.1,
    "asof": "2026-11-24",
-   "volume": 4736322,
+   "volume": 4744084,
    "change1d": -0.55,
    "change5d": 2.53,
    "change1m": 4.32,
@@ -1720,7 +1720,7 @@
   {
    "price": 2.39,
    "asof": "2026-11-24",
-   "volume": 6079683,
+   "volume": 6100735,
    "change1d": -3.24,
    "change5d": -8.78,
    "change1m": -0.42,
@@ -1852,7 +1852,7 @@
   {
    "price": 320.5,
    "asof": "2026-11-24",
-   "volume": 28977407,
+   "volume": 29477407,
    "change1d": -0.16,
    "change5d": -0.54,
    "change1m": 24.22,
@@ -2094,7 +2094,7 @@
   {
    "price": 320.0,
    "asof": "2026-11-24",
-   "volume": 18939346,
+   "volume": 19239346,
    "change1d": -1.23,
    "change5d": -7.31,
    "change1m": -11.3,
