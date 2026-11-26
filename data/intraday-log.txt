@@ -1,4 +1,4 @@
 seans ici veri alinan: 101 / 101
-intraday.json yazildi: 2026-11-25 20:48, ortanca gun -2.92%, kapsam 101
-en cok artan: KATMR +9.91%, ANSGR +2.13%, ASTOR +1.80%, OTKAR +1.51%, AKSA +0.18%
-en cok dusen: TRENJ -7.04%, TRMET -6.93%, TRALT -6.47%, TOASO -6.28%, BINHO -5.83%
+intraday.json yazildi: 2026-11-26 20:30, ortanca gun 1.36%, kapsam 101
+en cok artan: KATMR +9.84%, HEKTS +9.79%, TCKRC +7.20%, TOASO +5.15%, KCAER +4.91%
+en cok dusen: EGGUB -7.03%, ASTOR -4.00%, SOKM -2.99%, ANHYT -2.29%, TTRAK -1.84%
