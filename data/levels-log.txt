@@ -100,7 +100,7 @@ OK   VAKBN     32.40  direnc 32.8,33.67,34.48  destek 32.13,31.06,30.44  SMA50 a
 OK   VESTL     12.02  direnc 14.2,16.0,23.06  destek 10.54  
 OK   YKBNK     35.72  direnc 35.85,36.77,37.71  destek 34.82,33.21,32.37  SMA50 asagi kesisim; SMA200 asagi kesisim
 OK   ZOREN      1.32  direnc 1.7,2.67,2.78  destek 1.05  
-arsiv: 33 yeni sinyal satiri, 101 yeni fiyat satiri
+arsiv: 0 yeni sinyal satiri, 0 yeni fiyat satiri
 
 kapanis 2026-11-24 | 101 hisse | 33 ham sinyal | 18 teyitli | 0 basarisiz
 piyasa geneli sayilan turler: MACD histogrami eksiye dondu
