@@ -1,106 +1,105 @@
 hisse sayisi: 101
-OK   AEFES     14.62  direnc 14.75,15.09,15.95  destek 14.59,14.1,13.68  20 gunluk kanalin altina indi
-OK   AGHOL     23.54  direnc 26.56,27.05,27.94  destek -  20 gunluk kanalin altina indi
-OK   AHGAZ     42.20  direnc 47.12,48.0,49.06  destek 41.72,40.66,36.56  
-OK   AKBNK     60.65  direnc 60.7,63.95,67.2  destek 60.61,58.85,56.55  20 gunluk kanalin altina indi
-OK   AKCNS    165.60  direnc 166.35,174.0,178.0  destek 159.7,151.2,137.85  20 gunluk kanalin altina indi
-OK   AKFYE      2.56  direnc 2.78,2.83,2.94  destek 2.54,2.36  20 gunluk kanalin altina indi
-OK   AKSA      11.12  direnc 11.27,11.57,12.16  destek 10.97,10.52,10.06  
-OK   AKSEN     58.20  direnc 64.1,73.45,75.65  destek 57.65,50.65,49.66  
-OK   ALARK     99.30  direnc 101.6,104.8,107.63  destek 99.25,97.38,94.35  
-OK   ALBRK      7.88  direnc 8.45,8.74,9.06  destek 7.76,7.47,6.66  
-OK   ALTNY      9.65  direnc 11.85,13.82,15.68  destek 9.57  MACD histogrami eksiye dondu
-OK   ANHYT     83.15  direnc 89.8,92.8,95.0  destek 81.4,79.12,75.3  
-OK   ANSGR     21.06  direnc 21.87,22.4,23.04  destek 20.82,20.28,19.85  
-OK   ARCLK     60.00  direnc 71.8,94.5,97.7  destek -  20 gunluk kanalin altina indi
-OK   ASELS    313.75  direnc 321.25,339.25,350.0  destek 283.0,206.5,200.0  
-OK   ASTOR    152.40  direnc 168.5,179.6,189.6  destek 149.0,144.8,139.15  
-OK   AYGAZ    241.00  direnc 251.75,257.5,275.25  destek 233.8,227.0,205.8  
-OK   BERA       9.21  direnc 10.84,13.3,14.24  destek 8.75  MACD histogrami eksiye dondu
-OK   BIMAS    359.75  direnc 361.38,385.25,397.0  destek 353.25,347.25,326.5  MACD histogrami eksiye dondu
-OK   BINHO      3.39  direnc 4.7,6.49,7.8  destek 3.01  
-OK   BRSAN    637.00  direnc 644.25,665.5,682.83  destek 620.0,607.33,540.25  
-OK   BRYAT   1109.00  direnc 1394.0,1546.0,1752.0  destek -  20 gunluk kanalin altina indi
-OK   BTCIM      1.63  direnc 2.06,3.86,4.03  destek 1.36  
-OK   CANTE      0.88  direnc 1.04,1.24,1.33  destek 0.87  
-OK   CCOLA     73.60  direnc 74.6,76.5,80.4  destek 71.42,69.45,67.95  
-OK   CIMSA     37.16  direnc 43.59,44.82,47.36  destek 36.58  20 gunluk kanalin altina indi
-OK   CVKMD     10.82  direnc 12.16,12.93,13.33  destek 10.47,10.05,6.28  
-OK   CWENE     17.80  direnc 18.1,18.62,20.46  destek 17.09,15.73,15.25  
-OK   DOAS     110.60  direnc 149.2,167.7,182.9  destek -  
-OK   DOHOL     14.89  direnc 15.39,15.75,16.33  destek 14.84,14.23,13.82  20 gunluk kanalin altina indi
-OK   ECILC     43.98  direnc 45.71,46.54,48.85  destek 43.87,42.54,41.2  
-OK   ECZYT    137.90  direnc 165.4,185.0,188.8  destek 132.2  
-OK   EGEEN   4205.00  direnc 5062.5,5373.75,5600.0  destek 3512.5  MACD histogrami eksiye dondu
-OK   EGGUB     91.00  direnc 97.52,100.55,103.4  destek 89.55,83.65,81.7  
-OK   EKGYO     16.30  direnc 16.31,18.99,20.23  destek 15.74,14.16,13.5  
-OK   ENERY     13.94  direnc 14.85  destek 11.72,10.89,9.89  
-OK   ENJSA    104.80  direnc 112.02,117.18,119.3  destek 102.4,99.1,96.7  20 gunluk kanalin altina indi
-OK   ENKAI     75.55  direnc 75.72,77.97,81.83  destek 72.55,71.05,67.75  
-OK   ENTRA      4.46  direnc 4.54,4.67,4.77  destek 4.39,4.27,4.09  
-OK   EREGL     28.68  direnc 29.48,30.38,32.71  destek 27.28,26.78,26.15  20 gunluk kanalin altina indi; MACD histogrami eksiye dondu
-OK   EUREN      2.20  direnc 2.59,4.04,4.21  destek 2.01  
-OK   FENER      1.90  direnc 2.16,2.21,2.47  destek 1.88  
-OK   FROTO     66.90  direnc 71.0,76.8,81.55  destek 62.3  
-OK   GARAN    137.90  direnc 138.72,144.8,147.7  destek 136.84,132.4,128.6  
-OK   GLRMK    113.00  direnc 134.0,137.0,140.5  destek 101.7,97.45  
-OK   GLYHO     14.56  direnc 15.09,15.51,16.11  destek 13.52,13.1,11.69  20 gunluk kanalin altina indi
-OK   GRSEL    233.00  direnc 238.8,275.88,287.25  destek 231.35,195.1,191.1  
-OK   GUBRF    267.00  direnc 275.62,283.0,293.05  destek 260.67,254.12,244.25  
-OK   GWIND     17.11  direnc 20.14,23.46,23.95  destek 15.8  MACD histogrami eksiye dondu
-OK   HALKB     37.14  direnc 38.25,42.01,44.7  destek 36.06,35.01,32.14  20 gunluk kanalin altina indi
-OK   HEKTS      1.43  direnc 1.92,2.25,2.98  destek -  20 gunluk kanalin altina indi
-OK   ISCTR     11.82  direnc 12.01,13.32,13.84  destek 11.62,11.11,10.77  
-OK   ISDMR     45.08  direnc 46.18,48.11,55.2  destek 41.32,40.01,37.56  20 gunluk kanalin altina indi
-OK   ISMEN     24.94  direnc 28.98,36.06,37.4  destek 24.6  
-OK   KARSN      6.79  direnc 8.08,9.78,10.29  destek 6.13  
-OK   KATMR      1.22  direnc 1.25,1.58,1.62  destek 1.11,0.97  hacim 20 gun ortalamasinin 4.2 kati
-OK   KCAER      9.78  direnc 10.51,10.71,10.93  destek 8.04  
-OK   KCHOL    182.60  direnc 187.47,190.5,197.2  destek 182.1,178.56,172.8  20 gunluk kanalin altina indi
-OK   KORDS      2.14  direnc 2.68,2.77,2.92  destek -  20 gunluk kanalin altina indi
-OK   KRDMD     34.30  direnc 39.24,41.68,42.82  destek 30.18,28.38,27.73  20 gunluk kanalin altina indi; MACD histogrami eksiye dondu
-OK   LMKDC     19.67  direnc 23.26,24.82,25.41  destek 19.55,17.94  
-OK   MAVI      31.70  direnc 34.16,35.64,36.5  destek 31.66,30.92,29.92  20 gunluk kanalin altina indi
-OK   MGROS    400.75  direnc 460.75,476.12,497.0  destek -  20 gunluk kanalin altina indi
-OK   MPARK    417.50  direnc 422.5,432.75,440.0  destek 407.17,394.12,374.0  SMA50 asagi kesisim
-OK   OBAMS      3.11  direnc 3.81,3.88,4.11  destek -  20 gunluk kanalin altina indi
-OK   ODAS       3.98  direnc 4.94,5.12,5.28  destek -  20 gunluk kanalin altina indi; MACD histogrami eksiye dondu
-OK   OTKAR    302.00  direnc 318.88,331.75,339.25  destek 291.83,275.0,270.0  
-OK   OYAKC     17.70  direnc 20.04,21.44,22.55  destek 17.59  
-OK   PAHOL      0.71  direnc 0.93,1.07,1.36  destek 0.63  
-OK   PARSN     43.88  direnc 54.1,61.55,76.0  destek -  20 gunluk kanalin altina indi
-OK   PETKM     14.77  direnc 17.06,17.36,18.14  destek -  
-OK   PGSUS    151.00  direnc 156.6,160.0,166.1  destek 147.5,140.5,136.0  
-OK   RGYAS    149.30  direnc 156.13,165.4,168.8  destek 147.6,142.9,136.83  20 gunluk kanalin altina indi
-OK   RYSAS     24.08  direnc 24.35,26.16,26.68  destek 23.51,22.69,22.0  
-OK   SAHOL     74.10  direnc 79.35,80.65,84.62  destek 71.7  20 gunluk kanalin altina indi
-OK   SASA       1.39  direnc 1.71,2.42,2.62  destek -  20 gunluk kanalin altina indi
-OK   SISE      30.22  direnc 34.56,35.52,36.72  destek -  20 gunluk kanalin altina indi
-OK   SNGYO      2.28  direnc 2.89,3.24,3.32  destek 2.27,2.09  
-OK   SOKM      40.12  direnc 40.13,40.88,42.03  destek 39.1,37.74,36.7  
-OK   TABGD    165.60  direnc 169.6,173.3,183.05  destek 163.7,160.08,155.0  20 gunluk kanalin altina indi
-OK   TAVHL    280.50  direnc 287.7,293.08,310.12  destek 278.12,264.75,269.25  SMA200 asagi kesisim
-OK   TCELL     86.95  direnc 96.28,98.68,101.25  destek 84.77  20 gunluk kanalin altina indi
-OK   TCKRC    115.20  direnc 134.37,147.2,166.15  destek 112.6,108.2,104.9  
-OK   THYAO    311.50  direnc 325.31,333.31,339.5  destek 305.25,295.45,286.75  
-OK   TKFEN    183.70  direnc 203.0,214.0,245.2  destek 165.8,131.15,127.2  
-OK   TOASO    232.80  direnc 248.5,257.5,275.5  destek 224.55,220.4,208.2  
-OK   TRALT     32.10  direnc 40.36,41.04,42.92  destek 30.88,27.22,24.61  MACD histogrami eksiye dondu
-OK   TRENJ     64.05  direnc 69.05,70.8,72.55  destek 58.32,57.05,55.7  20 gunluk kanalin altina indi; MACD histogrami eksiye dondu
-OK   TRGYO     81.30  direnc 83.45,86.58,89.25  destek 81.25,76.68,72.0  
-OK   TRMET     95.30  direnc 107.4,114.6,117.9  destek 93.25,90.4,85.65  MACD histogrami eksiye dondu
-OK   TSKB       9.21  direnc 11.02,11.36,11.75  destek 8.16  
-OK   TTKOM     44.66  direnc 47.74,51.25,52.15  destek 44.37,43.31  20 gunluk kanalin altina indi
-OK   TTRAK    326.00  direnc 380.75,420.5,446.75  destek 324.75  
-OK   TUKAS      1.78  direnc 2.05,2.15,2.21  destek 1.73,1.6  
-OK   TUPRS    318.00  direnc 320.25,364.5,397.5  destek 283.0,251.5,240.2  
-OK   TURSG      2.79  direnc 3.69,4.24,4.43  destek -  
-OK   ULKER     61.95  direnc 82.4,88.65,90.75  destek -  20 gunluk kanalin altina indi
-OK   VAKBN     31.00  direnc 31.76,32.8,33.67  destek 30.44,29.92,29.28  MACD histogrami eksiye dondu
-OK   VESTL     12.01  direnc 14.2,16.0,23.06  destek 10.54  
-OK   YKBNK     34.04  direnc 34.69,35.85,36.77  destek 33.21,32.37,31.27  
-OK   ZOREN      1.29  direnc 1.7,2.67,2.78  destek 1.05  
-arsiv: 47 yeni sinyal satiri, 101 yeni fiyat satiri
+OK   AEFES     15.43  direnc 15.95,16.33,16.72  destek 14.99,14.59,14.1  
+OK   AGHOL     24.14  direnc 26.56,27.05,27.94  destek 24.0  RSI 30'un uzerine cikti
+OK   AHGAZ     42.22  direnc 47.12,48.0,49.06  destek 41.72,40.66,36.56  
+OK   AKBNK     59.95  direnc 60.7,63.95,67.2  destek 58.85,56.55,53.05  20 gunluk kanalin altina indi
+OK   AKCNS    169.50  direnc 174.0,178.0,183.0  destek 167.0,159.7,151.2  
+OK   AKFYE      2.69  direnc 2.78,2.83,2.94  destek 2.63,2.54,2.36  RSI 30'un uzerine cikti
+OK   AKSA      11.42  direnc 11.57,12.16,12.57  destek 11.28,10.97,10.52  
+OK   AKSEN     63.70  direnc 64.1,73.45,75.65  destek 62.75,61.15,58.7  
+OK   ALARK    105.20  direnc 107.63,110.97,116.65  destek 104.8,103.1,101.5  SMA50 yukari kesisim; MACD histogrami artiya dondu
+OK   ALBRK      7.85  direnc 8.45,8.74,9.06  destek 7.76,7.47,6.66  hacim 20 gun ortalamasinin 2.1 kati
+OK   ALTNY     10.21  direnc 11.85,13.82,15.68  destek 9.57  
+OK   ANHYT     80.90  direnc 83.1,89.8,92.8  destek 79.12,75.3,72.2  20 gunluk kanalin altina indi; hacim 20 gun ortalamasinin 3.2 kati
+OK   ANSGR     20.74  direnc 21.87,22.4,23.04  destek 20.28,19.85,19.52  
+OK   ARCLK     63.70  direnc 71.8,94.5,97.7  destek -  
+OK   ASELS    332.00  direnc 339.25,350.0,360.25  destek 325.25,316.42,283.0  
+OK   ASTOR    160.90  direnc 168.5,179.6,189.6  destek 149.0,144.8,139.15  
+OK   AYGAZ    249.80  direnc 251.75,257.5,275.25  destek 233.8,227.0,205.8  
+OK   BERA       9.42  direnc 10.84,13.3,14.24  destek 8.75  
+OK   BIMAS    370.75  direnc 385.25,397.0,406.12  destek 370.0,360.25,353.25  
+OK   BINHO      3.65  direnc 4.7,6.49,7.8  destek 3.01  
+OK   BRSAN    668.50  direnc 682.83,712.25,731.0  destek 620.0,605.88,540.25  SMA50 yukari kesisim; MACD histogrami artiya dondu
+OK   BRYAT   1134.00  direnc 1394.0,1546.0,1752.0  destek -  
+OK   BTCIM      1.82  direnc 2.06,3.86,4.03  destek 1.36  
+OK   CANTE      0.90  direnc 1.04,1.24,1.33  destek 0.87  
+OK   CCOLA     76.60  direnc 80.4,82.02,84.56  destek 76.5,75.22,71.42  
+OK   CIMSA     39.02  direnc 43.59,44.82,47.36  destek 36.58  
+OK   CVKMD     11.85  direnc 12.16,12.93,13.33  destek 11.45,10.84,10.47  
+OK   CWENE     19.05  direnc 20.46,22.39,26.43  destek 17.09,16.42,15.73  
+OK   DOAS     114.00  direnc 149.2,167.7,182.9  destek -  
+OK   DOHOL     14.95  direnc 15.39,15.75,16.33  destek 14.84,14.23,13.82  hacim 20 gun ortalamasinin 2.5 kati
+OK   ECILC     45.68  direnc 45.71,46.54,48.85  destek 43.87,42.54,41.2  
+OK   ECZYT    139.00  direnc 165.4,185.0,188.8  destek 132.2  hacim 20 gun ortalamasinin 4.5 kati
+OK   EGEEN   4380.00  direnc 5062.5,5373.75,5600.0  destek 3512.5  
+OK   EGGUB     86.20  direnc 97.52,100.55,103.4  destek 83.65,81.7,77.7  
+OK   EKGYO     16.51  direnc 18.99,20.23,20.76  destek 15.74,14.16,13.5  
+OK   ENERY     14.36  direnc 14.85  destek 11.72,10.89,9.89  
+OK   ENJSA    108.70  direnc 112.02,117.18,119.3  destek 105.48,102.4,99.1  
+OK   ENKAI     78.00  direnc 81.83,83.6,85.0  destek 77.2,72.55,71.05  
+OK   ENTRA      4.60  direnc 4.67,4.77,4.86  destek 4.59,4.52,4.39  SMA200 yukari kesisim
+OK   EREGL     30.60  direnc 32.71,33.5,34.48  destek 29.16,27.28,26.78  MACD histogrami artiya dondu
+OK   EUREN      2.22  direnc 2.59,4.04,4.21  destek 2.01  
+OK   FENER      1.94  direnc 2.16,2.21,2.47  destek 1.88  
+OK   FROTO     68.25  direnc 71.0,76.8,81.55  destek 62.3  
+OK   GARAN    138.10  direnc 138.72,144.8,147.7  destek 136.84,132.4,128.6  
+OK   GLRMK    115.50  direnc 134.0,137.0,140.5  destek 101.7,97.45  
+OK   GLYHO     14.83  direnc 15.09,15.51,16.11  destek 14.64,13.52,13.1  
+OK   GRSEL    236.50  direnc 238.8,275.88,287.25  destek 231.35,195.1,191.1  
+OK   GUBRF    286.50  direnc 293.05,303.0,309.25  destek 272.62,267.25,260.94  
+OK   GWIND     17.50  direnc 20.14,23.46,23.95  destek 15.8  
+OK   HALKB     37.64  direnc 38.25,42.01,44.7  destek 36.06,35.01,32.14  
+OK   HEKTS      1.56  direnc 1.92,2.25,2.98  destek -  hacim 20 gun ortalamasinin 2.1 kati
+OK   ISCTR     11.81  direnc 12.01,13.32,13.84  destek 11.62,11.11,10.77  
+OK   ISDMR     47.00  direnc 48.11,55.2,59.5  destek 41.32,40.01,37.56  
+OK   ISMEN     25.22  direnc 28.98,36.06,37.4  destek 24.6  
+OK   KARSN      7.09  direnc 8.08,9.78,10.29  destek 6.13  
+OK   KATMR      1.23  direnc 1.25,1.58,1.62  destek 1.11,1.07,0.97  SMA50 asagi kesisim; hacim 20 gun ortalamasinin 5.1 kati
+OK   KCAER     10.41  direnc 10.51,10.71,10.93  destek 9.99,10.15,9.53  
+OK   KCHOL    189.40  direnc 190.5,197.2,202.6  destek 185.0,182.1,178.56  
+OK   KORDS      2.23  direnc 2.68,2.77,2.92  destek -  RSI 30'un uzerine cikti
+OK   KRDMD     36.38  direnc 39.24,41.68,42.82  destek 35.56,30.18,28.38  
+OK   LMKDC     20.20  direnc 23.26,24.82,25.41  destek 19.55,17.94  
+OK   MAVI      31.70  direnc 34.16,35.64,36.5  destek 31.66,30.92,29.92  RSI 30'un uzerine cikti
+OK   MGROS    410.25  direnc 460.75,476.12,497.0  destek 407.25  RSI 30'un uzerine cikti
+OK   MPARK    433.25  direnc 440.0,451.42,459.0  destek 419.0,407.17,394.12  SMA50 yukari kesisim
+OK   OBAMS      3.13  direnc 3.81,3.88,4.11  destek -  
+OK   ODAS       4.07  direnc 4.94,5.12,5.28  destek -  RSI 30'un uzerine cikti
+OK   OTKAR    304.00  direnc 318.88,331.75,339.25  destek 291.83,275.0,270.0  
+OK   OYAKC     18.63  direnc 20.04,21.44,22.55  destek 17.59  
+OK   PAHOL      0.74  direnc 0.93,1.07,1.36  destek 0.63  MACD histogrami artiya dondu
+OK   PARSN     46.06  direnc 54.1,61.55,76.0  destek 44.82  
+OK   PETKM     15.51  direnc 17.06,17.36,18.14  destek 15.3  MACD histogrami artiya dondu
+OK   PGSUS    152.60  direnc 156.6,160.0,166.1  destek 147.5,140.5,136.0  
+OK   RGYAS    155.00  direnc 156.13,165.4,168.8  destek 151.1,147.6,142.9  
+OK   RYSAS     24.24  direnc 24.35,26.16,26.68  destek 23.6,22.69,22.0  
+OK   SAHOL     75.60  direnc 79.35,80.65,84.62  destek 74.26,71.7  
+OK   SASA       1.45  direnc 1.71,2.42,2.62  destek 1.43  hacim 20 gun ortalamasinin 5.8 kati
+OK   SISE      31.90  direnc 34.56,35.52,36.72  destek 31.78  
+OK   SNGYO      2.33  direnc 2.89,3.24,3.32  destek 2.27,2.09  
+OK   SOKM      39.24  direnc 40.13,40.88,42.03  destek 39.1,37.74,36.7  
+OK   TABGD    176.10  direnc 183.05,205.37,222.3  destek 166.9,163.7,160.08  
+OK   TAVHL    287.75  direnc 293.08,310.12,333.75  destek 278.12,267.25,261.62  SMA200 yukari kesisim
+OK   TCELL     89.40  direnc 96.28,98.68,101.25  destek 87.0,84.77  
+OK   TCKRC    121.20  direnc 134.37,147.2,166.15  destek 112.6,108.2,104.9  SMA200 asagi kesisim
+OK   THYAO    314.00  direnc 325.31,333.31,339.5  destek 305.25,295.45,286.75  
+OK   TKFEN    189.20  direnc 203.0,214.0,245.2  destek 183.9,181.1,165.8  
+OK   TOASO    255.25  direnc 257.5,275.5,285.67  destek 251.88,242.65,224.55  SMA50 yukari kesisim
+OK   TRALT     35.54  direnc 40.36,41.04,42.92  destek 34.92,34.12,30.88  
+OK   TRENJ     70.40  direnc 70.8,72.55,78.2  destek 69.73,66.37,58.32  
+OK   TRGYO     82.70  direnc 83.45,86.58,89.25  destek 81.25,76.68,72.0  
+OK   TRMET    101.40  direnc 107.4,114.6,117.9  destek 93.25,90.4,85.65  
+OK   TSKB       9.41  direnc 11.02,11.36,11.75  destek 8.16  
+OK   TTKOM     45.88  direnc 47.74,51.25,52.15  destek 45.66,44.37,43.31  
+OK   TTRAK    318.00  direnc 380.75,420.5,446.75  destek -  20 gunluk kanalin altina indi
+OK   TUKAS      1.79  direnc 2.05,2.15,2.21  destek 1.73,1.6  
+OK   TUPRS    330.00  direnc 364.5,397.5,407.5  destek 324.5,283.0,251.5  
+OK   TURSG      2.81  direnc 3.69,4.24,4.43  destek -  
+OK   ULKER     64.65  direnc 82.4,88.65,90.75  destek -  RSI 30'un uzerine cikti
+OK   VAKBN     30.30  direnc 31.76,32.8,33.67  destek 29.92,29.28,28.44  hacim 20 gun ortalamasinin 3.7 kati
+OK   VESTL     12.45  direnc 14.2,16.0,23.06  destek 10.54  
+OK   YKBNK     32.92  direnc 33.58,34.69,35.85  destek 32.37,31.27,30.61  20 gunluk kanalin altina indi
+OK   ZOREN      1.32  direnc 1.7,2.67,2.78  destek 1.05  
+arsiv: 32 yeni sinyal satiri, 101 yeni fiyat satiri
 
-kapanis 2026-11-25 | 101 hisse | 47 ham sinyal | 15 teyitli | 0 basarisiz
-piyasa geneli sayilan turler: 20 gunluk kanalin altina indi
+kapanis 2026-11-27 | 101 hisse | 32 ham sinyal | 32 teyitli | 0 basarisiz
