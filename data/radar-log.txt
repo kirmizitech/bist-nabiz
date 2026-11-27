@@ -1,0 +1,13 @@
+radar: 2026-11-27 kapsam 101 | seans tamamlama: None
+saglam: ['AHGAZ', 'TRGYO', 'AKSA', 'TUPRS', 'MPARK', 'CCOLA', 'ENERY', 'RYSAS', 'BIMAS', 'KCHOL', 'GLYHO', 'RGYAS', 'TAVHL', 'KRDMD', 'AYGAZ', 'THYAO', 'GARAN', 'ALARK', 'ENKAI', 'ENJSA']
+zayif : ['VESTL', 'ECZYT', 'EUREN', 'HEKTS', 'OBAMS', 'SASA', 'ECILC', 'BRYAT', 'EGEEN', 'ZOREN', 'SNGYO', 'BERA', 'BINHO', 'PAHOL', 'KORDS', 'PARSN', 'ULKER', 'BTCIM', 'KATMR', 'KARSN']
+bugun eklenen: ['2026-11-27:saglam:ENJSA']
+takipte: 26 | haftalik sonuc: 60 | biten: 40
+taban: {"saglam": {"g5": {"n": 938, "dogru": 46, "ortFark": -0.0005}, "g20": {"n": 926, "dogru": 47, "ortFark": 0.0032}}, "zayif": {"g5": {"n": 778, "dogru": 58, "ortFark": -0.0016}, "g20": {"n": 767, "dogru": 59, "ortFark": -0.0116}}, "rastgele": {"g5": {"n": 18447, "onde": 45, "geride": 55}, "g20": {"n": 18144, "onde": 45, "geride": 55}}, "bant": {"n": 1700, "ic": 77}, "yillar": {"2022": {"saglam": 37, "zayif": 50}, "2023": {"saglam": 49, "zayif": 64}, "2024": {"saglam": 47, "zayif": 63}, "2025": {"saglam": 47, "zayif": 58}, "2026": {"saglam": 45, "zayif": 53}}, "donem": "2022-12-08 – 2026-11-27"}
+# Canlı kayıtlar (2026-11-27 sonrası)
+# Geriye dönük kayıtlar (son 60 gün, o günün verisiyle)
+   Zayıf halka, bir haftalık: 42 kaydın 18 tanesinde öngörü doğrulandı (%43). 5 yıllık beklenti %58, rastgele seçilmiş bir hisse için %55. Ortalama fark +1,5 puan (5 yıllık −0,2 puan). Beklentinin altında; bu dönemde ölçüler zayıf çalışıyor.
+   Zayıf halka, 20 günlük: 31 kaydın 21 tanesinde öngörü doğrulandı (%68). 5 yıllık beklenti %59, rastgele seçilmiş bir hisse için %55. Ortalama fark −3,7 puan (5 yıllık −1,2 puan). Beklentinin üzerinde.
+   Sağlam profil, bir haftalık: 43 kaydın 19 tanesinde öngörü doğrulandı (%44). 5 yıllık beklenti %46, rastgele seçilmiş bir hisse için %45. Ortalama fark −0,2 puan (5 yıllık −0,1 puan). Beklentiyle uyumlu.
+   Sağlam profil, 20 günlük: 31 kaydın 19 tanesinde öngörü doğrulandı (%61). 5 yıllık beklenti %47, rastgele seçilmiş bir hisse için %45. Ortalama fark +0,5 puan (5 yıllık +0,3 puan). Beklentinin üzerinde.
+   Oynaklık bandı: 85 kayıttan 66 tanesinde (%78) hafta sonu fiyatı beklenen bandın içinde kaldı. 5 yıllık beklenti %77.
