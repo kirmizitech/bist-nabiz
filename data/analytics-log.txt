@@ -5,14 +5,14 @@ TUKAS: bolunme duzeltmesi uygulandi
 veri alinan: 101 / 101
 haftalik seri yazilan: 101
 endeks yazildi: 501 bar, 101 hisse icin goreli guc
-endeksten en guclu 5: EGGUB +26.9, THYAO +26.1, PGSUS +25.5, TCKRC +24.3, CWENE +23.5
-endeksten en zayif 5: TURSG -28.9, SOKM -28.0, AKFYE -24.2, PETKM -15.7, PAHOL -15.0
-taban oranlari: 67 hucre, genel 10 gun ortanca -0.46, pozitif pay 47%
-  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2485, 10g ortanca -0.41%, pozitif 47%
-  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2021, 10g ortanca -1.18%, pozitif 43%
-  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1550, 10g ortanca +0.21%, pozitif 50%
-  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1422, 10g ortanca -0.64%, pozitif 46%
-  rsi30-45|karisik|normal|hacim<1: n=1188, 10g ortanca -0.13%, pozitif 49%
-desenler: 101 hisse, havuz 44456 hisse-gun, 50.5 sn
-  bugunku desen dagilimi: dipten donus 38, zayif dusus 35, zayif yukselis 12, yatay 7, dusen trend kanali 5, yatay sikisma 2, tepeden donus 1, yukselen trend kanali 1
-  simulasyon (20 gun): yon isabeti %50, bant kapsama %35, brier 0.276 (taban 0.251), IC 0.076
+endeksten en guclu 5: PGSUS +25.6, THYAO +25.1, EGGUB +24.2, CWENE +23.1, KATMR +17.4
+endeksten en zayif 5: SOKM -25.9, AKFYE -25.4, TURSG -21.7, PAHOL -14.9, ULKER -13.9
+taban oranlari: 67 hucre, genel 10 gun ortanca -0.42, pozitif pay 47%
+  rsi30-45|ikisinin-altinda|normal|hacim<1: n=2484, 10g ortanca -0.38%, pozitif 47%
+  rsi55-70|ikisinin-ustunde|normal|hacim<1: n=2011, 10g ortanca -1.18%, pozitif 43%
+  rsi55-70|ikisinin-ustunde|normal|hacim1-2: n=1546, 10g ortanca +0.21%, pozitif 50%
+  rsi45-55|ikisinin-ustunde|normal|hacim<1: n=1415, 10g ortanca -0.61%, pozitif 47%
+  rsi30-45|karisik|normal|hacim<1: n=1179, 10g ortanca -0.09%, pozitif 49%
+desenler: 101 hisse, havuz 44458 hisse-gun, 46.3 sn
+  bugunku desen dagilimi: zayif dusus 45, dipten donus 30, yatay 8, zayif yukselis 7, dusen trend kanali 6, tepeden donus 2, hacimli dip kirilimi 2, yukselen trend kanali 1
+  simulasyon (20 gun): yon isabeti %51, bant kapsama %36, brier 0.272 (taban 0.251), IC 0.069
