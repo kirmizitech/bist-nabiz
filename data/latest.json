@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-27T23:44:56+00:00",
+ "generatedAt": "2026-11-28T02:15:33+00:00",
  "asof": "2026-11-27",
  "asofSpread": null,
  "universe": "BIST 100 + 1 ek isim",
@@ -8,7 +8,7 @@
   {
    "price": 15.43,
    "asof": "2026-11-27",
-   "volume": 25122243,
+   "volume": 25117175,
    "change1d": 2.59,
    "change5d": -3.8,
    "change1m": -2.96,
@@ -30,7 +30,7 @@
   {
    "price": 24.14,
    "asof": "2026-11-27",
-   "volume": 1471955,
+   "volume": 1471883,
    "change1d": 1.09,
    "change5d": -3.44,
    "change1m": -2.27,
@@ -52,7 +52,7 @@
   {
    "price": 42.22,
    "asof": "2026-11-27",
-   "volume": 3498583,
+   "volume": 3498559,
    "change1d": 0.05,
    "change5d": -3.61,
    "change1m": -8.22,
@@ -74,7 +74,7 @@
   {
    "price": 59.95,
    "asof": "2026-11-27",
-   "volume": 224809636,
+   "volume": 224808535,
    "change1d": -1.15,
    "change5d": -7.98,
    "change1m": -4.84,
@@ -140,7 +140,7 @@
   {
    "price": 11.42,
    "asof": "2026-11-27",
-   "volume": 17790644,
+   "volume": 17791117,
    "change1d": -0.7,
    "change5d": 7.23,
    "change1m": 10.13,
@@ -162,7 +162,7 @@
   {
    "price": 63.7,
    "asof": "2026-11-27",
-   "volume": 9425737,
+   "volume": 9425286,
    "change1d": 7.24,
    "change5d": -0.16,
    "change1m": -5.35,
@@ -184,7 +184,7 @@
   {
    "price": 105.2,
    "asof": "2026-11-27",
-   "volume": 3580087,
+   "volume": 3580955,
    "change1d": 2.63,
    "change5d": 2.43,
    "change1m": 11.56,
@@ -206,7 +206,7 @@
   {
    "price": 7.85,
    "asof": "2026-11-27",
-   "volume": 18865963,
+   "volume": 18810535,
    "change1d": -1.13,
    "change5d": -4.73,
    "change1m": -3.56,
@@ -228,7 +228,7 @@
   {
    "price": 10.21,
    "asof": "2026-11-27",
-   "volume": 8110074,
+   "volume": 8100563,
    "change1d": 2.41,
    "change5d": -3.04,
    "change1m": -0.68,
@@ -294,7 +294,7 @@
   {
    "price": 63.7,
    "asof": "2026-11-27",
-   "volume": 1451506,
+   "volume": 1451457,
    "change1d": 2.0,
    "change5d": -0.08,
    "change1m": -10.28,
@@ -316,7 +316,7 @@
   {
    "price": 332.0,
    "asof": "2026-11-27",
-   "volume": 39993122,
+   "volume": 39985347,
    "change1d": 5.4,
    "change5d": 1.53,
    "change1m": -7.39,
@@ -338,7 +338,7 @@
   {
    "price": 160.9,
    "asof": "2026-11-27",
-   "volume": 43411776,
+   "volume": 43415780,
    "change1d": 9.98,
    "change5d": 10.51,
    "change1m": -8.84,
@@ -360,7 +360,7 @@
   {
    "price": 249.8,
    "asof": "2026-11-27",
-   "volume": 837273,
+   "volume": 837317,
    "change1d": 2.5,
    "change5d": 0.48,
    "change1m": -7.82,
@@ -382,7 +382,7 @@
   {
    "price": 9.42,
    "asof": "2026-11-27",
-   "volume": 3095744,
+   "volume": 3096084,
    "change1d": 1.4,
    "change5d": -3.98,
    "change1m": -1.36,
@@ -404,7 +404,7 @@
   {
    "price": 370.75,
    "asof": "2026-11-27",
-   "volume": 8786409,
+   "volume": 8784809,
    "change1d": 2.99,
    "change5d": -0.94,
    "change1m": 1.64,
@@ -426,7 +426,7 @@
   {
    "price": 3.65,
    "asof": "2026-11-27",
-   "volume": 9993085,
+   "volume": 9993084,
    "change1d": 5.19,
    "change5d": -3.95,
    "change1m": 3.99,
@@ -448,7 +448,7 @@
   {
    "price": 668.5,
    "asof": "2026-11-27",
-   "volume": 2112839,
+   "volume": 2112827,
    "change1d": 4.29,
    "change5d": 8.52,
    "change1m": 3.48,
@@ -470,7 +470,7 @@
   {
    "price": 1134.0,
    "asof": "2026-11-27",
-   "volume": 73046,
+   "volume": 73044,
    "change1d": 1.07,
    "change5d": -1.13,
    "change1m": -7.13,
@@ -514,7 +514,7 @@
   {
    "price": 0.9,
    "asof": "2026-11-27",
-   "volume": 105726654,
+   "volume": 105726544,
    "change1d": 1.12,
    "change5d": -3.23,
    "change1m": -5.26,
@@ -561,7 +561,7 @@
   {
    "price": 39.02,
    "asof": "2026-11-27",
-   "volume": 5504732,
+   "volume": 5505097,
    "change1d": 2.36,
    "change5d": 0.31,
    "change1m": -1.71,
@@ -627,7 +627,7 @@
   {
    "price": 114.0,
    "asof": "2026-11-27",
-   "volume": 1213151,
+   "volume": 1213160,
    "change1d": 2.15,
    "change5d": 2.52,
    "change1m": -15.99,
@@ -652,7 +652,7 @@
   {
    "price": 14.95,
    "asof": "2026-11-27",
-   "volume": 34035721,
+   "volume": 34027581,
    "change1d": -0.2,
    "change5d": -5.97,
    "change1m": -9.23,
@@ -674,7 +674,7 @@
   {
    "price": 45.68,
    "asof": "2026-11-27",
-   "volume": 3748602,
+   "volume": 3749751,
    "change1d": 1.69,
    "change5d": 0.53,
    "change1m": -1.25,
@@ -696,7 +696,7 @@
   {
    "price": 139.0,
    "asof": "2026-11-27",
-   "volume": 1505284,
+   "volume": 1504848,
    "change1d": -1.84,
    "change5d": -5.7,
    "change1m": -11.01,
@@ -740,7 +740,7 @@
   {
    "price": 86.2,
    "asof": "2026-11-27",
-   "volume": 1039060,
+   "volume": 1039038,
    "change1d": 1.89,
    "change5d": -5.27,
    "change1m": 6.35,
@@ -762,7 +762,7 @@
   {
    "price": 16.51,
    "asof": "2026-11-27",
-   "volume": 116422600,
+   "volume": 116420885,
    "change1d": -0.9,
    "change5d": -5.22,
    "change1m": -3.34,
@@ -784,7 +784,7 @@
   {
    "price": 14.36,
    "asof": "2026-11-27",
-   "volume": 24493286,
+   "volume": 24496234,
    "change1d": 2.06,
    "change5d": -0.62,
    "change1m": 7.97,
@@ -806,7 +806,7 @@
   {
    "price": 108.7,
    "asof": "2026-11-27",
-   "volume": 3476287,
+   "volume": 3479114,
    "change1d": 2.55,
    "change5d": -2.6,
    "change1m": -3.98,
@@ -828,7 +828,7 @@
   {
    "price": 78.0,
    "asof": "2026-11-27",
-   "volume": 6465067,
+   "volume": 6463686,
    "change1d": 1.89,
    "change5d": 0.97,
    "change1m": -0.57,
@@ -850,7 +850,7 @@
   {
    "price": 4.6,
    "asof": "2026-11-27",
-   "volume": 7903174,
+   "volume": 7903176,
    "change1d": 2.91,
    "change5d": 2.45,
    "change1m": 5.02,
@@ -875,7 +875,7 @@
   {
    "price": 30.6,
    "asof": "2026-11-27",
-   "volume": 95414568,
+   "volume": 95399532,
    "change1d": 3.45,
    "change5d": 1.12,
    "change1m": -1.99,
@@ -941,7 +941,7 @@
   {
    "price": 68.25,
    "asof": "2026-11-27",
-   "volume": 15352377,
+   "volume": 15348006,
    "change1d": 3.72,
    "change5d": -2.78,
    "change1m": -1.37,
@@ -1007,7 +1007,7 @@
   {
    "price": 14.83,
    "asof": "2026-11-27",
-   "volume": 3216660,
+   "volume": 3209603,
    "change1d": -0.2,
    "change5d": -2.31,
    "change1m": -9.41,
@@ -1029,7 +1029,7 @@
   {
    "price": 236.5,
    "asof": "2026-11-27",
-   "volume": 207025,
+   "volume": 207121,
    "change1d": 1.63,
    "change5d": -0.34,
    "change1m": -5.1,
@@ -1051,7 +1051,7 @@
   {
    "price": 286.5,
    "asof": "2026-11-27",
-   "volume": 2762204,
+   "volume": 2763829,
    "change1d": 3.43,
    "change5d": 6.6,
    "change1m": 3.06,
@@ -1073,7 +1073,7 @@
   {
    "price": 17.5,
    "asof": "2026-11-27",
-   "volume": 1885046,
+   "volume": 1884839,
    "change1d": 1.21,
    "change5d": -5.2,
    "change1m": 3.8,
@@ -1095,7 +1095,7 @@
   {
    "price": 37.64,
    "asof": "2026-11-27",
-   "volume": 18979085,
+   "volume": 18983645,
    "change1d": 2.01,
    "change5d": -2.64,
    "change1m": -12.75,
@@ -1117,7 +1117,7 @@
   {
    "price": 1.56,
    "asof": "2026-11-27",
-   "volume": 323178112,
+   "volume": 319414172,
    "change1d": -0.64,
    "change5d": 3.31,
    "change1m": -1.27,
@@ -1139,7 +1139,7 @@
   {
    "price": 11.81,
    "asof": "2026-11-27",
-   "volume": 612289132,
+   "volume": 612292132,
    "change1d": 0.0,
    "change5d": -5.97,
    "change1m": -2.56,
@@ -1161,7 +1161,7 @@
   {
    "price": 47.0,
    "asof": "2026-11-27",
-   "volume": 955881,
+   "volume": 955996,
    "change1d": 2.35,
    "change5d": -3.92,
    "change1m": -10.48,
@@ -1183,7 +1183,7 @@
   {
    "price": 25.22,
    "asof": "2026-11-27",
-   "volume": 4691882,
+   "volume": 3643082,
    "change1d": 0.16,
    "change5d": -2.25,
    "change1m": 0.4,
@@ -1255,7 +1255,7 @@
   {
    "price": 10.41,
    "asof": "2026-11-27",
-   "volume": 15193938,
+   "volume": 15185888,
    "change1d": 1.46,
    "change5d": 6.55,
    "change1m": 15.67,
@@ -1280,7 +1280,7 @@
   {
    "price": 189.4,
    "asof": "2026-11-27",
-   "volume": 28524916,
+   "volume": 28530508,
    "change1d": 1.83,
    "change5d": 1.18,
    "change1m": -5.21,
@@ -1302,7 +1302,7 @@
   {
    "price": 2.23,
    "asof": "2026-11-27",
-   "volume": 16934484,
+   "volume": 16983906,
    "change1d": 2.76,
    "change5d": -2.62,
    "change1m": -13.9,
@@ -1324,7 +1324,7 @@
   {
    "price": 36.38,
    "asof": "2026-11-27",
-   "volume": 26032800,
+   "volume": 26033040,
    "change1d": 3.06,
    "change5d": -3.19,
    "change1m": -3.14,
@@ -1368,7 +1368,7 @@
   {
    "price": 31.7,
    "asof": "2026-11-27",
-   "volume": 4903115,
+   "volume": 4903661,
    "change1d": 0.32,
    "change5d": -4.58,
    "change1m": -5.71,
@@ -1390,7 +1390,7 @@
   {
    "price": 410.25,
    "asof": "2026-11-27",
-   "volume": 3715448,
+   "volume": 3715461,
    "change1d": 2.63,
    "change5d": -5.74,
    "change1m": -3.98,
@@ -1412,7 +1412,7 @@
   {
    "price": 433.25,
    "asof": "2026-11-27",
-   "volume": 379549,
+   "volume": 379580,
    "change1d": 2.73,
    "change5d": -1.53,
    "change1m": 12.31,
@@ -1434,7 +1434,7 @@
   {
    "price": 3.13,
    "asof": "2026-11-27",
-   "volume": 16268077,
+   "volume": 16294532,
    "change1d": 0.0,
    "change5d": -5.15,
    "change1m": -17.41,
@@ -1544,7 +1544,7 @@
   {
    "price": 46.06,
    "asof": "2026-11-27",
-   "volume": 148709,
+   "volume": 148806,
    "change1d": 2.95,
    "change5d": -3.68,
    "change1m": -5.81,
@@ -1632,7 +1632,7 @@
   {
    "price": 24.24,
    "asof": "2026-11-27",
-   "volume": 2929280,
+   "volume": 2930744,
    "change1d": 0.58,
    "change5d": -1.7,
    "change1m": -6.34,
@@ -1654,7 +1654,7 @@
   {
    "price": 75.6,
    "asof": "2026-11-27",
-   "volume": 73168663,
+   "volume": 73169375,
    "change1d": 0.6,
    "change5d": -3.69,
    "change1m": -9.19,
@@ -1676,7 +1676,7 @@
   {
    "price": 1.45,
    "asof": "2026-11-27",
-   "volume": 2281517564,
+   "volume": 2280803017,
    "change1d": 0.69,
    "change5d": 0.69,
    "change1m": -2.68,
@@ -1720,7 +1720,7 @@
   {
    "price": 2.33,
    "asof": "2026-11-27",
-   "volume": 15773624,
+   "volume": 15748519,
    "change1d": 0.43,
    "change5d": -6.05,
    "change1m": 2.64,
@@ -1764,7 +1764,7 @@
   {
    "price": 176.1,
    "asof": "2026-11-27",
-   "volume": 313083,
+   "volume": 313057,
    "change1d": 1.67,
    "change5d": -3.98,
    "change1m": -9.32,
@@ -1852,7 +1852,7 @@
   {
    "price": 314.0,
    "asof": "2026-11-27",
-   "volume": 28382198,
+   "volume": 28384632,
    "change1d": 1.37,
    "change5d": -4.56,
    "change1m": 24.36,
@@ -1874,7 +1874,7 @@
   {
    "price": 189.2,
    "asof": "2026-11-27",
-   "volume": 2967626,
+   "volume": 2966710,
    "change1d": 2.1,
    "change5d": 1.72,
    "change1m": -1.97,
@@ -1896,7 +1896,7 @@
   {
    "price": 255.25,
    "asof": "2026-11-27",
-   "volume": 4829683,
+   "volume": 4831067,
    "change1d": 4.27,
    "change5d": 3.55,
    "change1m": 10.98,
@@ -1918,7 +1918,7 @@
   {
    "price": 35.54,
    "asof": "2026-11-27",
-   "volume": 88608671,
+   "volume": 88609207,
    "change1d": 7.63,
    "change5d": 0.68,
    "change1m": -1.28,
@@ -1940,7 +1940,7 @@
   {
    "price": 70.4,
    "asof": "2026-11-27",
-   "volume": 1857689,
+   "volume": 1869597,
    "change1d": 8.06,
    "change5d": -0.91,
    "change1m": -6.51,
@@ -1962,7 +1962,7 @@
   {
    "price": 82.7,
    "asof": "2026-11-27",
-   "volume": 774700,
+   "volume": 774350,
    "change1d": -0.06,
    "change5d": -2.36,
    "change1m": -4.34,
@@ -1984,7 +1984,7 @@
   {
    "price": 101.4,
    "asof": "2026-11-27",
-   "volume": 8320776,
+   "volume": 8309676,
    "change1d": 4.75,
    "change5d": -3.7,
    "change1m": -2.97,
@@ -2006,7 +2006,7 @@
   {
    "price": 9.41,
    "asof": "2026-11-27",
-   "volume": 16546162,
+   "volume": 16562220,
    "change1d": 0.75,
    "change5d": -4.85,
    "change1m": 5.73,
@@ -2028,7 +2028,7 @@
   {
    "price": 45.88,
    "asof": "2026-11-27",
-   "volume": 20944858,
+   "volume": 20942020,
    "change1d": 2.5,
    "change5d": -3.37,
    "change1m": -3.0,
@@ -2072,7 +2072,7 @@
   {
    "price": 1.79,
    "asof": "2026-11-27",
-   "volume": 58744986,
+   "volume": 58538192,
    "change1d": 0.0,
    "change5d": -2.72,
    "change1m": -4.28,
@@ -2094,7 +2094,7 @@
   {
    "price": 330.0,
    "asof": "2026-11-27",
-   "volume": 16847683,
+   "volume": 16849803,
    "change1d": 2.09,
    "change5d": 2.25,
    "change1m": -7.04,
@@ -2138,7 +2138,7 @@
   {
    "price": 64.65,
    "asof": "2026-11-27",
-   "volume": 3091163,
+   "volume": 3091179,
    "change1d": 2.7,
    "change5d": -1.0,
    "change1m": -14.54,
@@ -2182,7 +2182,7 @@
   {
    "price": 12.45,
    "asof": "2026-11-27",
-   "volume": 11998402,
+   "volume": 13906769,
    "change1d": -0.4,
    "change5d": -4.23,
    "change1m": 5.42,
@@ -2204,7 +2204,7 @@
   {
    "price": 32.92,
    "asof": "2026-11-27",
-   "volume": 335300358,
+   "volume": 335086090,
    "change1d": -1.79,
    "change5d": -8.96,
    "change1m": -4.52,
