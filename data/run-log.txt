@@ -106,4 +106,4 @@ Tamam: 101 hisse, 0 hata, as-of 2026-11-27 | RSI hazir 101, MACD hazir 101
 Kisa: CWENE, KATMR, ASTOR, BRSAN, AKSA
 Orta: AKSA, CWENE, TOASO, BRSAN, KCAER
 Uzun: TKFEN, AHGAZ, TUPRS, RYSAS, ENERY
-Pano yazildi: docs/index.html (47887 bayt)
+Pano yazildi: docs/index.html (47369 bayt)
