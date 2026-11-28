@@ -100,6 +100,6 @@ OK   VAKBN     30.30  direnc 31.76,32.8,33.67  destek 29.92,29.28,28.44  hacim 2
 OK   VESTL     12.45  direnc 14.2,16.0,23.06  destek 10.54  
 OK   YKBNK     32.92  direnc 33.58,34.69,35.85  destek 32.37,31.27,30.61  20 gunluk kanalin altina indi
 OK   ZOREN      1.32  direnc 1.7,2.67,2.78  destek 1.05  
-arsiv: 1 yeni sinyal satiri, 0 yeni fiyat satiri
+arsiv: 0 yeni sinyal satiri, 0 yeni fiyat satiri
 
 kapanis 2026-11-27 | 101 hisse | 33 ham sinyal | 33 teyitli | 0 basarisiz
